@@ -1,0 +1,23 @@
+{
+  "_name": "English",
+  "tabCounters": "counters", "tabTime": "time", "tabSettings": "settings",
+  "search": "search…", "allFolders": "all", "newFolder": "new folder", "folderName": "folder name",
+  "name": "name", "group": "folder", "value": "value", "step": "step", "symbol": "symbol",
+  "multiplier": "multiplier", "goalValue": "value goal", "goalMoney": "money goal",
+  "behavior": "behavior", "behCont": "continue", "behStop": "stop", "behReset": "reset",
+  "history": "history", "clearHistory": "clear all", "emptyHistory": "no entries",
+  "created": "created", "manualChange": "manual edit", "stepChange": "change", "resetEvent": "reset",
+  "delete": "delete", "cancel": "cancel", "confirm": "confirm", "save": "save", "close": "close",
+  "newCounter": "new counter", "editCounter": "edit counter",
+  "theme": "theme", "light": "light", "dark": "dark", "system": "system",
+  "vibration": "button vibration", "enableHistory": "enable history",
+  "sort": "sorting", "sortInsert": "insertion", "sortName": "name", "sortValue": "value",
+  "reverse": "reverse", "language": "language",
+  "importCsv": "import csv", "exportPdf": "export pdf", "backup": "json backup", "restore": "restore backup",
+  "showValue": "show value", "showMoney": "show money total", "optionalText": "optional text (right column)",
+  "export": "export", "diary": "diary", "addNote": "add note…", "timer": "timer",
+  "minutes": "min", "seconds": "sec", "start": "start", "pause": "pause", "reset": "reset",
+  "selected": "selected", "total": "total", "obj": "goal",
+  "months": "january,february,march,april,may,june,july,august,september,october,november,december",
+  "timerDone": "timer completed"
+}

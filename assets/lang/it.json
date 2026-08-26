@@ -1,0 +1,23 @@
+{
+  "_name": "Italiano",
+  "tabCounters": "contatori", "tabTime": "tempo", "tabSettings": "impostazioni",
+  "search": "cerca…", "allFolders": "tutte", "newFolder": "nuova cartella", "folderName": "nome cartella",
+  "name": "nome", "group": "cartella", "value": "valore", "step": "step", "symbol": "simbolo",
+  "multiplier": "moltiplicatore", "goalValue": "obiettivo valore", "goalMoney": "obiettivo soldi",
+  "behavior": "comportamento", "behCont": "continua", "behStop": "stop", "behReset": "reset",
+  "history": "cronologia", "clearHistory": "svuota", "emptyHistory": "nessuna voce",
+  "created": "creazione", "manualChange": "modifica manuale", "stepChange": "variazione", "resetEvent": "reset",
+  "delete": "eliminare", "cancel": "annulla", "confirm": "conferma", "save": "salva", "close": "chiudi",
+  "newCounter": "nuovo contatore", "editCounter": "modifica contatore",
+  "theme": "tema", "light": "chiaro", "dark": "scuro", "system": "sistema",
+  "vibration": "vibrazione pulsanti", "enableHistory": "abilita cronologia",
+  "sort": "ordinamento", "sortInsert": "inserimento", "sortName": "nome", "sortValue": "valore",
+  "reverse": "inverti", "language": "lingua",
+  "importCsv": "importa csv", "exportPdf": "esporta pdf", "backup": "backup json", "restore": "ripristina backup",
+  "showValue": "mostra valore", "showMoney": "mostra totale monetario", "optionalText": "testo opzionale (colonna destra)",
+  "export": "esporta", "diary": "diario", "addNote": "aggiungi nota…", "timer": "timer",
+  "minutes": "min", "seconds": "sec", "start": "avvia", "pause": "pausa", "reset": "azzera",
+  "selected": "selezionati", "total": "totale", "obj": "obj",
+  "months": "gennaio,febbraio,marzo,aprile,maggio,giugno,luglio,agosto,settembre,ottobre,novembre,dicembre",
+  "timerDone": "timer completato"
+}
