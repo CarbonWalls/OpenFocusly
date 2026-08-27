@@ -7,36 +7,13 @@ import android.os.Build
 import android.view.View
 import android.view.WindowManager
 import android.view.KeyEvent
+import android.media.MediaPlayer
 import androidx.documentfile.provider.DocumentFile
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
-import android.media.MediaPlayer
-// dentro la classe:
-private var mediaPlayer: MediaPlayer? = null
-
-// nel when(call.method):
-"playSound" -> playSound(call, result)
-
-private fun playSound(call: MethodCall, result: MethodChannel.Result) {
-    val path = call.argument<String>("path")
-    if (path == null) { result.error("playSound", "missing path", null); return }
-    try {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(path)
-            prepare()
-            setOnCompletionListener { it.release() }
-            start()
-        }
-        result.success(true)
-    } catch (e: Exception) { result.error("playSound", e.message, null) }
-}
-
-override fun onDestroy() { mediaPlayer?.release(); super.onDestroy() }
 
 class MainActivity : FlutterActivity() {
     companion object {
@@ -50,6 +27,7 @@ class MainActivity : FlutterActivity() {
     private var volumeEvents: EventChannel.EventSink? = null
     private var volumeButtonsEnabled = false
     private var pendingDirectoryResult: MethodChannel.Result? = null
+    private var mediaPlayer: MediaPlayer? = null
 
     override fun configureFlutterEngine(engine: FlutterEngine) {
         super.configureFlutterEngine(engine)
@@ -69,6 +47,7 @@ class MainActivity : FlutterActivity() {
                 "setKeepScreenOn" -> setKeepScreenOn(call, result)
                 "setFullscreen" -> setFullscreen(call, result)
                 "setVolumeButtons" -> setVolumeButtons(call, result)
+                "playSound" -> playSound(call, result)
                 else -> result.notImplemented()
             }
         }
@@ -213,10 +192,25 @@ class MainActivity : FlutterActivity() {
         result.success(true)
     }
 
-
     private fun setVolumeButtons(call: MethodCall, result: MethodChannel.Result) {
         volumeButtonsEnabled = call.argument<Boolean>("enabled") ?: false
         result.success(true)
+    }
+
+    private fun playSound(call: MethodCall, result: MethodChannel.Result) {
+        val path = call.argument<String>("path")
+        if (path == null) { result.error("playSound", "missing path", null); return }
+        try {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(path)
+                prepare()
+                setOnCompletionListener { it.release() }
+                start()
+            }
+            result.success(true)
+        } catch (e: Exception) { result.error("playSound", e.message, null) }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -229,13 +223,8 @@ class MainActivity : FlutterActivity() {
         return super.onKeyDown(keyCode, event)
     }
 
-    override fun onActivityResult(
-        requestCode: Int,
-        resultCode: Int,
-        data: Intent?
-    ) {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
         when (requestCode) {
             REQUEST_CREATE, REQUEST_OPEN -> {
                 val callback = pendingFileResult
@@ -246,45 +235,32 @@ class MainActivity : FlutterActivity() {
                     callback?.success(null)
                 }
             }
-
             REQUEST_PICK_DIRECTORY -> {
                 val callback = pendingDirectoryResult
                 pendingDirectoryResult = null
-
                 if (resultCode != Activity.RESULT_OK || data?.data == null) {
                     callback?.success(null)
                     return
                 }
-
                 val treeUri = data.data!!
                 try {
-                    val takeFlags = (data.flags) and (
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                    )
+                    val takeFlags = (data.flags) and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                     if (takeFlags != 0) {
                         contentResolver.takePersistableUriPermission(treeUri, takeFlags)
                     }
-                } catch (_: SecurityException) {
-                }
-
+                } catch (_: SecurityException) {}
                 val directory = DocumentFile.fromTreeUri(this, treeUri)
                 if (directory == null) {
-                    callback?.error(
-                        "INVALID_DIRECTORY",
-                        "selected directory is unavailable",
-                        null
-                    )
+                    callback?.error("INVALID_DIRECTORY", "selected directory is unavailable", null)
                     return
                 }
-
-                callback?.success(
-                    mapOf(
-                        "uri" to treeUri.toString(),
-                        "name" to (directory.name ?: "cartella")
-                    )
-                )
+                callback?.success(mapOf("uri" to treeUri.toString(), "name" to (directory.name ?: "cartella")))
             }
         }
+    }
+
+    override fun onDestroy() { 
+        mediaPlayer?.release()
+        super.onDestroy() 
     }
 }
