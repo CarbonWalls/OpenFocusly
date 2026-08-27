@@ -264,3 +264,28 @@ class MainActivity : FlutterActivity() {
         }
     }
 }
+
+import android.media.MediaPlayer
+// ... inside class:
+private var mediaPlayer: MediaPlayer? = null
+
+// in the when(call.method) block add:
+"playSound" -> playSound(call, result)
+
+private fun playSound(call: MethodCall, result: MethodChannel.Result) {
+    val path = call.argument<String>("path")
+    if (path == null) { result.error("playSound", "missing path", null); return }
+    try {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(path)
+            prepare()
+            setOnCompletionListener { it.release() }
+            start()
+        }
+        result.success(true)
+    } catch (e: Exception) { result.error("playSound", e.message, null) }
+}
+
+override fun onDestroy() { mediaPlayer?.release(); super.onDestroy() }

@@ -1,5 +1,5 @@
-name: contatori
-description: gestione contatori con cronologia e obiettivi
+name: openfocusly
+description: counters, focus, notes.
 publish_to: 'none'
 version: 1.0.0+1
 environment:
@@ -8,6 +8,6 @@ dependencies:
   flutter:
     sdk: flutter
 flutter:
-  uses-material-design: true
   assets:
     - assets/lang/
+    - assets/audio/
