@@ -55,7 +55,7 @@ class _RootState extends State<Root> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([store as Listenable, nav as Listenable]),
+      animation: Listenable.merge([store, nav]),
       builder: (_, __) {
         final brightness = ui.PlatformDispatcher.instance.platformBrightness;
         final dark = store.prefs.theme == 'dark' ||

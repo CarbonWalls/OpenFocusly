@@ -13,6 +13,30 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
+import android.media.MediaPlayer
+// dentro la classe:
+private var mediaPlayer: MediaPlayer? = null
+
+// nel when(call.method):
+"playSound" -> playSound(call, result)
+
+private fun playSound(call: MethodCall, result: MethodChannel.Result) {
+    val path = call.argument<String>("path")
+    if (path == null) { result.error("playSound", "missing path", null); return }
+    try {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(path)
+            prepare()
+            setOnCompletionListener { it.release() }
+            start()
+        }
+        result.success(true)
+    } catch (e: Exception) { result.error("playSound", e.message, null) }
+}
+
+override fun onDestroy() { mediaPlayer?.release(); super.onDestroy() }
 
 class MainActivity : FlutterActivity() {
     companion object {
@@ -264,28 +288,3 @@ class MainActivity : FlutterActivity() {
         }
     }
 }
-
-import android.media.MediaPlayer
-// ... inside class:
-private var mediaPlayer: MediaPlayer? = null
-
-// in the when(call.method) block add:
-"playSound" -> playSound(call, result)
-
-private fun playSound(call: MethodCall, result: MethodChannel.Result) {
-    val path = call.argument<String>("path")
-    if (path == null) { result.error("playSound", "missing path", null); return }
-    try {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(path)
-            prepare()
-            setOnCompletionListener { it.release() }
-            start()
-        }
-        result.success(true)
-    } catch (e: Exception) { result.error("playSound", e.message, null) }
-}
-
-override fun onDestroy() { mediaPlayer?.release(); super.onDestroy() }
