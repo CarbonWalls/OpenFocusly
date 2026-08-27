@@ -1,7 +1,7 @@
 name: openfocusly
 description: counters, focus, notes.
 publish_to: 'none'
-version: 1.0.0+1
+version: alpha-2
 environment:
   sdk: '>=3.0.0 <4.0.0'
 dependencies:
@@ -11,3 +11,11 @@ flutter:
   assets:
     - assets/lang/
     - assets/audio/
+dev_dependencies:
+  flutter_launcher_icons: ^0.14.4
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.jpg"   # your source image (1024×1024 recommended)
+  adaptive_icon_background: "#FFFFFF"      # (optional) for Android adaptive icon
+  adaptive_icon_foreground: "assets/icon/foreground.png"
