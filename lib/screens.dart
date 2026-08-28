@@ -1032,16 +1032,16 @@ class _CounterButton extends StatelessWidget {
     return Btn(
       filled: primary,
       on: onTap,
-      radius: 14,
-      pad: const EdgeInsets.symmetric(vertical: 18, horizontal: 26),
+      radius: 18,
+      pad: const EdgeInsets.symmetric(vertical: 24, horizontal: 36),
       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        IconX(icon, size: 24, color: primary ? white : p.text2),
+        IconX(icon, size: 32, color: primary ? white : p.text2),
         if (label != null) ...[
-          const SizedBox(width: 7),
+          const SizedBox(width: 10),
           Text(label!,
               style: TextStyle(
                   color: primary ? white : p.text2,
-                  fontSize: 15,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800)),
         ],
       ]),

@@ -356,7 +356,10 @@ class Store extends ChangeNotifier {
   }
 
   void vib() {
-    if (prefs.vibration) HapticFeedback.selectionClick();
+    if (!prefs.vibration) return;
+    try {
+      HapticFeedback.selectionClick();
+    } catch (_) {}
   }
 
   double total() => counters.fold(0.0, (a, c) => a + c.value);

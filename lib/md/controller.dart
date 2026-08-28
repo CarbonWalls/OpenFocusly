@@ -5,8 +5,70 @@ import 'syntax.dart';
 class LiveMarkdownController extends TextEditingController {
   LiveMarkdownController({super.text});
 
-  bool _nearRange(int position, int start, int end, {int distance = 2}) =>
+  bool _nearRange(int position, int start, int end, {int distance = 1}) =>
       position >= start - distance && position <= end + distance;
+
+  @override
+  void valueChanged(TextEditingValue newValue) {
+    final oldText = value.text;
+    final newText = newValue.text;
+    final oldLen = oldText.length;
+    final newLen = newText.length;
+    
+    // Only process if text was added (not deleted)
+    if (newLen == oldLen + 1) {
+      final cursorPos = newValue.selection.baseOffset;
+      if (cursorPos > 0 && cursorPos <= newLen) {
+        final charJustTyped = newText[cursorPos - 1];
+        
+        // Autocomplete for single backtick (inline code)
+        if (charJustTyped == '`') {
+          // Check if this is NOT part of a triple backtick sequence
+          final beforeCursor = cursorPos >= 3 ? newText.substring(cursorPos - 3, cursorPos - 1) : '';
+          if (beforeCursor != '``') {
+            // Insert closing backtick and position cursor in middle
+            final newFullText = '${newText.substring(0, cursorPos)}${newText.substring(cursorPos - 1)}';
+            value = TextEditingValue(
+              text: newFullText,
+              selection: TextSelection.collapsed(offset: cursorPos),
+            );
+            return;
+          }
+        }
+        
+        // Move cursor forward when typing next to existing backtick
+        if (cursorPos < newLen && newText[cursorPos] == '`') {
+          // Check if previous char was also a backtick (auto-completed one)
+          if (cursorPos > 0 && newText[cursorPos - 1] == '`') {
+            value = TextEditingValue(
+              text: newText,
+              selection: TextSelection.collapsed(offset: cursorPos + 1),
+            );
+            return;
+          }
+        }
+      }
+    }
+    
+    // Autocomplete for triple backticks (code block)
+    if (newLen >= oldLen + 3) {
+      final cursorPos = newValue.selection.baseOffset;
+      if (cursorPos >= 3) {
+        final lastThree = newText.substring(cursorPos - 3, cursorPos);
+        if (lastThree == '```') {
+          // Insert closing ``` with newlines and move cursor to middle
+          final newFullText = '${newText.substring(0, cursorPos)}\n\n```';
+          value = TextEditingValue(
+            text: newFullText,
+            selection: TextSelection.collapsed(offset: cursorPos + 2),
+          );
+          return;
+        }
+      }
+    }
+    
+    super.valueChanged(newValue);
+  }
 
   TextStyle _markerStyle(TextStyle base, {required bool visible}) =>
       base.copyWith(
@@ -45,7 +107,7 @@ class LiveMarkdownController extends TextEditingController {
       final active = selStart >= 0 &&
           selEnd >= 0 &&
           (selStart == selEnd
-              ? _nearRange(selStart, absStart, absEnd)
+              ? _nearRange(selStart, absStart, absEnd, distance: 1)
               : selStart <= absEnd && selEnd >= absStart);
 
       String marker;
@@ -126,7 +188,7 @@ class LiveMarkdownController extends TextEditingController {
       final lineStart = offset;
       final lineEnd = offset + line.length;
       final caret = selection.start.clamp(0, text.length).toInt();
-      final nearLine = _nearRange(caret, lineStart, lineEnd, distance: 3);
+      final nearLine = _nearRange(caret, lineStart, lineEnd, distance: 1);
 
       final fenceMatch = RegExp(r'^```(\w*)\s*$').firstMatch(line.trim());
       if (fenceMatch != null) {
@@ -156,9 +218,9 @@ class LiveMarkdownController extends TextEditingController {
           final openEnd = openStart + opening.length + gap.length;
           final closeStart = closing == null ? -1 : lineEnd - closing.length;
           final closeEnd = closing == null ? -1 : lineEnd;
-          final revealOpen = _nearRange(caret, openStart, openEnd, distance: 3);
+          final revealOpen = _nearRange(caret, openStart, openEnd, distance: 1);
           final revealClose = closing != null &&
-              _nearRange(caret, closeStart, closeEnd, distance: 3);
+              _nearRange(caret, closeStart, closeEnd, distance: 1);
           final size = switch (opening.length) {
             1 => 29.0,
             2 => 24.0,
