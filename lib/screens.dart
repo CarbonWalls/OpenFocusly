@@ -802,17 +802,9 @@ class _CounterDetailState extends State<CounterDetailScreen> {
 
   void _bump([double? delta]) {
     if (widget.counter.stopped) return;
-    final d = delta ?? widget.counter.step;
     if (vibration) store.vib();
-    Sound.play(d < 0 ? 'minus' : 'plus');
-    if (stopwatch && startedAt != null) {
-      final now = DateTime.now();
-      watchHistory.add(_WatchEntry(
-          d > 0 ? '+' : '-', now.difference(startedAt!).inMilliseconds));
-      startedAt = now;
-      elapsedMs = 0;
-    }
-    store.bump(widget.counter, d);
+    store.bump(widget.counter, delta ?? widget.counter.step);
+    if (sound) SystemSound.play(SystemSoundType.click);
   }
 
   void _toggleStopwatch() {

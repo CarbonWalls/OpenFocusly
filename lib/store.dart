@@ -356,7 +356,7 @@ class Store extends ChangeNotifier {
   }
 
   void vib() {
-    if (prefs.vibration) HapticFeedback.selectionClick();
+    if (prefs.vibration) HapticFeedback.mediumImpact();
   }
 
   double total() => counters.fold(0.0, (a, c) => a + c.value);
@@ -572,7 +572,6 @@ class Nav extends ChangeNotifier {
       final p = history.removeLast();
       screen = p[0];
       timeTab = p[1];
-      // guard: if we land on the counter detail but the counter is gone, bail out
       if (screen == 8 &&
           (viewingCounter == null ||
               !store.counterExists(viewingCounter!.id))) {

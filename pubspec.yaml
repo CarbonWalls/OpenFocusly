@@ -7,6 +7,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_quill: ^11.5.1
 flutter:
   assets:
     - assets/lang/
@@ -16,4 +17,4 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icon/icon.jpg"
+  image_path: "assets/icon/icon.png"
