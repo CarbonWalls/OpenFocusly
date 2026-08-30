@@ -21,13 +21,16 @@ class MainActivity : FlutterActivity() {
         private const val REQUEST_CREATE = 71
         private const val REQUEST_OPEN = 72
         private const val REQUEST_PICK_DIRECTORY = 73
+        private const val REQUEST_PICK_AUDIO = 74
     }
 
     private var pendingFileResult: MethodChannel.Result? = null
+    private var pendingDirectoryResult: MethodChannel.Result? = null
+    private var pendingAudioResult: MethodChannel.Result? = null
     private var volumeEvents: EventChannel.EventSink? = null
     private var volumeButtonsEnabled = false
-    private var pendingDirectoryResult: MethodChannel.Result? = null
     private var mediaPlayer: MediaPlayer? = null
+    private var notificationPlayer: MediaPlayer? = null
 
     override fun configureFlutterEngine(engine: FlutterEngine) {
         super.configureFlutterEngine(engine)
@@ -48,6 +51,11 @@ class MainActivity : FlutterActivity() {
                 "setFullscreen" -> setFullscreen(call, result)
                 "setVolumeButtons" -> setVolumeButtons(call, result)
                 "playSound" -> playSound(call, result)
+                "pickAudioFile" -> pickAudioFile(result)
+                "playNotificationSound" -> playNotificationSound(call, result)
+                "openLink" -> openLink(call, result)
+                "listBuiltinSounds" -> listBuiltinSounds(result)
+
                 else -> result.notImplemented()
             }
         }
@@ -55,6 +63,90 @@ class MainActivity : FlutterActivity() {
             override fun onListen(arguments: Any?, events: EventChannel.EventSink?) { volumeEvents = events }
             override fun onCancel(arguments: Any?) { volumeEvents = null }
         })
+    }
+
+    private fun pickAudioFile(result: MethodChannel.Result) {
+        if (pendingAudioResult != null) {
+            result.error("PICKER_BUSY", "Audio picker already open.", null)
+            return
+        }
+        pendingAudioResult = result
+        try {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "audio/*"
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            }
+            startActivityForResult(
+                Intent.createChooser(intent, "Pick notification sound"),
+                REQUEST_PICK_AUDIO
+            )
+        } catch (e: Exception) {
+            pendingAudioResult = null
+            result.error("PICKER_LAUNCH_FAILED", e.message, null)
+        }
+    }
+
+    private fun playNotificationSound(call: MethodCall, result: MethodChannel.Result) {
+        val sound = call.argument<String>("uri") ?: ""
+        if (sound.isBlank()) {
+            result.success(false)
+            return
+        }
+        try {
+            notificationPlayer?.stop()
+            notificationPlayer?.release()
+            notificationPlayer = null
+
+            val player = MediaPlayer()
+
+            if (!sound.contains("/") && !sound.contains(":")) {
+                val afd = assets.openFd("audio/$sound.mp3")
+                player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                afd.close()
+            } else {
+                player.setDataSource(this, Uri.parse(sound))
+            }
+
+            player.prepare()
+            player.setOnCompletionListener {
+                it.release()
+                if (notificationPlayer == it) notificationPlayer = null
+            }
+            player.start()
+            notificationPlayer = player
+            result.success(true)
+        } catch (e: Exception) {
+            result.success(false)
+        }
+    }
+
+    private fun openLink(call: MethodCall, result: MethodChannel.Result) {
+        val url = call.argument<String>("url") ?: ""
+        if (url.isBlank()) {
+            result.success(false)
+            return
+        }
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            startActivity(intent)
+            result.success(true)
+        } catch (e: Exception) {
+            result.success(false)
+        }
+    }
+
+    private fun listBuiltinSounds(result: MethodChannel.Result) {
+        try {
+            val files = assets.list("audio") ?: emptyArray()
+            val names = files
+                .filter { it.endsWith(".mp3", ignoreCase = true) }
+                .map { it.removeSuffix(".mp3").removeSuffix(".MP3") }
+            result.success(names)
+        } catch (e: Exception) {
+            result.success(emptyList<String>())
+        }
     }
 
     private fun createDocument(call: MethodCall, result: MethodChannel.Result) {
@@ -235,6 +327,7 @@ class MainActivity : FlutterActivity() {
                     callback?.success(null)
                 }
             }
+
             REQUEST_PICK_DIRECTORY -> {
                 val callback = pendingDirectoryResult
                 pendingDirectoryResult = null
@@ -256,11 +349,29 @@ class MainActivity : FlutterActivity() {
                 }
                 callback?.success(mapOf("uri" to treeUri.toString(), "name" to (directory.name ?: "cartella")))
             }
+
+            REQUEST_PICK_AUDIO -> {
+                val callback = pendingAudioResult
+                pendingAudioResult = null
+                if (resultCode == Activity.RESULT_OK && data?.data != null) {
+                    val uri = data.data!!
+                    try {
+                        contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    } catch (_: SecurityException) {}
+                    callback?.success(uri.toString())
+                } else {
+                    callback?.success(null)
+                }
+            }
         }
     }
 
-    override fun onDestroy() { 
+    override fun onDestroy() {
         mediaPlayer?.release()
-        super.onDestroy() 
+        notificationPlayer?.release()
+        super.onDestroy()
     }
 }

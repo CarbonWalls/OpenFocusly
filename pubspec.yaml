@@ -11,9 +11,11 @@ dependencies:
 flutter:
   assets:
     - assets/lang/
+    - assets/notif/
     - assets/audio/
 dev_dependencies:
   flutter_launcher_icons: ^0.14.4
+  comments_remover: ^1.0.2
 flutter_launcher_icons:
   android: true
   ios: true

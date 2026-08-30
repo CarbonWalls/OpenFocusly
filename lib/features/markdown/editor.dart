@@ -1,39 +1,36 @@
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import '../theme.dart';
+import '../../theme/theme_scope.dart';
 import 'controller.dart';
+import 'formatter.dart';
 
 class NoteLiveEditor extends StatefulWidget {
   final String initial;
   final ValueChanged<String> onSave;
   final bool readOnly;
-  const NoteLiveEditor(
-      {super.key,
-      required this.initial,
-      required this.onSave,
-      this.readOnly = false});
+
+  const NoteLiveEditor({
+    super.key,
+    required this.initial,
+    required this.onSave,
+    this.readOnly = false,
+  });
+
   @override
   State<NoteLiveEditor> createState() => NoteLiveEditorState();
 }
 
 class NoteLiveEditorState extends State<NoteLiveEditor> {
   late final LiveMarkdownController controller;
-  late final FocusNode focusNode;
+  final FocusNode focusNode = FocusNode();
+  final ScrollController scrollController = ScrollController();
+
   String get text => controller.text;
 
   @override
   void initState() {
     super.initState();
     controller = LiveMarkdownController(text: widget.initial);
-    focusNode = FocusNode();
     controller.addListener(_changed);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !widget.readOnly) {
-        focusNode.requestFocus();
-        controller.selection =
-            TextSelection.collapsed(offset: controller.text.length);
-      }
-    });
   }
 
   @override
@@ -41,13 +38,13 @@ class NoteLiveEditorState extends State<NoteLiveEditor> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initial != widget.initial &&
         widget.initial != controller.text) {
+      final sel = controller.selection;
       controller.value = TextEditingValue(
-          text: widget.initial,
-          selection: TextSelection.collapsed(offset: widget.initial.length));
-    }
-    if (oldWidget.readOnly != widget.readOnly && !widget.readOnly && mounted) {
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => focusNode.requestFocus());
+        text: widget.initial,
+        selection: sel.isValid && sel.end <= widget.initial.length
+            ? sel
+            : TextSelection.collapsed(offset: widget.initial.length),
+      );
     }
   }
 
@@ -62,32 +59,30 @@ class NoteLiveEditorState extends State<NoteLiveEditor> {
     controller.removeListener(_changed);
     controller.dispose();
     focusNode.dispose();
+    scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final p = ThemeScope.of(context).pal;
-    return Stack(children: [
-      if (controller.text.isEmpty)
-        Positioned.fill(
-            child: IgnorePointer(
-                child: Text('…',
-                    style:
-                        TextStyle(color: p.sub, fontSize: 15, height: 1.45)))),
-      EditableText(
+    return SingleChildScrollView(
+      controller: scrollController,
+      padding: const EdgeInsets.fromLTRB(10, 12, 10, 20),
+      child: EditableText(
         controller: controller,
         focusNode: focusNode,
         readOnly: widget.readOnly,
-        style: TextStyle(color: p.text, fontSize: 15, height: 1.45),
+        showCursor: !widget.readOnly,
+        inputFormatters: [MarkdownAutoCloseFormatter()],
+        style: TextStyle(color: p.text, fontSize: 15, height: 1.5),
         cursorColor: p.accent,
         backgroundCursorColor: p.sub,
-        selectionColor: p.accent.withValues(alpha: .22),
-        keyboardType: TextInputType.multiline,
-        textInputAction: TextInputAction.newline,
+        selectionColor: p.accentSoft,
         maxLines: null,
-        minLines: 18,
+        keyboardType: TextInputType.multiline,
+        enableInteractiveSelection: true,
       ),
-    ]);
+    );
   }
 }
