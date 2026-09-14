@@ -1,5 +1,6 @@
 analyzer:
   exclude:
+    - legacy/**
     - build/**
     - android/**
     - ios/**

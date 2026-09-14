@@ -75,7 +75,8 @@ OpenFocusly runs on:
 | Layer | Technology |
 |-------|------------|
 | Framework | **Flutter** (Dart) |
-| State Management | `ChangeNotifier` + custom `Store` |
+| State Management | `ChangeNotifier` + custom `Store` (three global singletons) |
+| Design system | hand-drawn `CustomPaint` icons, no icon font, no Material widgets |
 | Navigation | Custom `Nav` controller (no external packages) |
 | File Access | Android Storage Access Framework via platform channels |
 | Code Highlighting | Custom-built Dart/JS/TS/Java/Kotlin highlighter |
@@ -113,26 +114,34 @@ flutter build apk --release
 ```
 OpenFocusly/
 ├── lib/
-│   ├── main.dart          # App entry & root shell
-│   ├── screens.dart       # All screens (Home, Counters, Time, Notes, Settings, Info)
-│   ├── store.dart         # Data models, persistence, nav, sound
-│   ├── theme.dart         # Palette, icons, reusable widgets (Btn, Field, etc.)
-│   ├── lang.dart          # Localization loader
-│   └── md/
-│       ├── controller.dart # Live markdown editing controller
-│       ├── editor.dart     # Live markdown editor widget
-│       ├── preview.dart    # Markdown preview widget
-│       └── syntax.dart     # Custom syntax highlighter
+│   └── main.dart          # the whole app: models, store, nav, theme, icons, screens
+├── test/
+│   ├── screens_test.dart  # golden-shot harness — renders 22 real screens to PNG
+│   └── goldens/           # reference renders (light, dark, wide, empty states)
+├── legacy/
+│   └── lib/               # an earlier modular refactor, kept for reference; not built
 ├── assets/
-│   ├── audio/             # plus.mp3 / minus.mp3 for feedback sounds
-│   └── lang/              # en.json, it.json (localization)
-├── android/               # Android runner + SAF platform channel
-├── ios/                   # iOS runner
-├── web/                   # Web build
-├── windows/               # Windows runner
-├── macos/                 # macOS runner
-├── linux/                 # Linux runner
-└── test/                  # Tests (placeholder)
+│   ├── icon/              # launcher icon source
+│   ├── audio/             # optional drop-in sounds
+│   └── lang/              # reserved (UI strings are compiled into main.dart)
+├── android/               # Flutter runner + the `saf` platform channel (MainActivity.kt)
+├── ios/  web/  windows/  macos/  linux/
+└── pubspec.yaml           # zero runtime dependencies
+```
+
+Everything lives in `lib/main.dart` on purpose: no package graph, no codegen, no
+build runners. The file is organised in commented sections — tokens, palette,
+icons, models, nav, primitives, chrome, focus engine, shell, then one section
+per screen.
+
+### Reviewing the UI without a device
+
+The golden harness boots the real widget tree (mocked platform channel) and
+writes one PNG per screen, so interface changes can be reviewed in seconds
+instead of a full Flutter + Gradle cycle:
+
+```bash
+flutter test --update-goldens test/screens_test.dart   # ~30s for 22 screens
 ```
 
 ---
@@ -141,11 +150,20 @@ OpenFocusly/
 
 ### Audio
 
-Place `plus.mp3` and `minus.mp3` in `assets/audio/`. These play on counter increments/decrements when the sound setting is enabled.
+Counter taps use the platform's own light click/tick (`SystemSound`) — no audio
+files are required. The end-of-session chime can be any sound you already own:
+**Settings → Focus → Completion sound** opens the system picker and stores the
+document URI, which the Android side plays through the notification channel.
+
+The volume keys can drive the focused counter instead of the media volume
+(full-screen counter view → the clock toggle).
 
 ### Language
 
-Add a new JSON file to `assets/lang/` (e.g., `de.json`) with the same key structure as `en.json`. The app automatically detects it at startup.
+Italian and English are compiled in (`const it` / `const en` maps in
+`main.dart`, with a second-generation override map for newer strings).
+Switching is instant and lives in Settings → Language. `assets/lang/` is kept
+for a future runtime loader but is not read yet.
 
 ---
 
