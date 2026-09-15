@@ -157,6 +157,7 @@ void main() {
     (320, 568), // smallest realistic phone
     (393, 852), // pixel-ish
     (428, 926), // big phone, landscape-ish tall
+    (852, 393), // landscape phone (rail kicks in, short height)
     (600, 900), // small tablet portrait (below rail)
     (720, 800), // rail kicks in
     (768, 1024), // tablet
@@ -195,21 +196,30 @@ void main() {
     }
   }
 
-  testWidgets('detail + editors render at tiny width', (t) async {
-    final errors = <Object>[];
-    final prev = FlutterError.onError;
-    FlutterError.onError = (details) => errors.add(details.exception);
-    try {
-      seedFull();
-      app.nav.jump(1);
-      await mount(t, 320, 568);
-      app.nav.openCounterDetail(app.store.counters.first);
-      await t.pump(const Duration(milliseconds: 500));
-      app.nav.openCounterEditor();
-      await t.pump(const Duration(milliseconds: 500));
-    } finally {
-      FlutterError.onError = prev;
-    }
-    expect(errors, isEmpty, reason: 'detail/editor overflow at 320px');
-  });
+  for (final (w, h) in <(double, double)>[(320, 568), (852, 393)]) {
+    testWidgets('detail + editors render at ${w.toInt()}x${h.toInt()}',
+        (t) async {
+      final errors = <Object>[];
+      final dumps = <String>[];
+      final prev = FlutterError.onError;
+      FlutterError.onError = (details) {
+        errors.add(details.exception);
+        dumps.add(details.toString());
+      };
+      try {
+        seedFull();
+        app.nav.jump(1);
+        await mount(t, w, h);
+        app.nav.openCounterDetail(app.store.counters.first);
+        await t.pump(const Duration(milliseconds: 500));
+        app.nav.openCounterEditor();
+        await t.pump(const Duration(milliseconds: 500));
+      } finally {
+        FlutterError.onError = prev;
+      }
+      expect(errors, isEmpty,
+          reason:
+              'detail/editor overflow at ${w}x$h\n${dumps.join("\n----\n")}');
+    });
+  }
 }
