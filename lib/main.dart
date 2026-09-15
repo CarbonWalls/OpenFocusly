@@ -1820,7 +1820,8 @@ const it2 = {
   'soundSub': 'Suono sui pulsanti + e −',
   'privacyLead':
       'Tutto resta su questo dispositivo: contatori, note e timer sono file che controlli tu.',
-  'privacyNet': 'Nessun permesso internet, nessuna analisi.',
+  'privacyNet': "L'app non chiede mai il permesso internet.",
+  'keepOnTitle': 'Schermo sempre acceso',
   'appName': 'OpenFocusly',
   'appTag': 'contatori, focus, note.',
   'autoNote': 'Nota automatica',
@@ -1874,6 +1875,7 @@ const it2 = {
   'duration': 'durata',
   'autoLog': 'nota automatica',
   'focusSub': 'un blocco di tempo pulito, senza distrazioni.',
+  'focusSubShort': 'senza distrazioni.',
   'focusTotal': 'totali oggi',
   'minutesShort': 'min',
   'recent': 'recenti',
@@ -1960,7 +1962,8 @@ const en2 = {
   'soundSub': 'Click on the + and − buttons',
   'privacyLead':
       'Everything stays on this device: counters, notes and timer data are files you control.',
-  'privacyNet': 'No internet permission, no analytics.',
+  'privacyNet': 'The app never asks for internet permission.',
+  'keepOnTitle': 'Keep screen on',
   'appTag': 'counters, focus, notes.',
   'autoNote': 'Auto note',
   'autoNoteSub': 'Creates a note when a session ends.',
@@ -2014,6 +2017,7 @@ const en2 = {
   'duration': 'duration',
   'autoLog': 'auto note',
   'focusSub': 'one clean block of time, no distractions.',
+  'focusSubShort': 'no distractions.',
   'focusTotal': 'today',
   'minutesShort': 'min',
   'recent': 'recent',
@@ -5797,7 +5801,7 @@ class HomeScreen extends StatelessWidget {
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 5),
                                   child: Text(
-                                    '${counters.where((e) => e.today != 0).length} ${L.t('counters')}',
+                                    '${counters.where((e) => e.today != 0).length} ${L.t('counters').toLowerCase()}',
                                     style: cap(p),
                                   ),
                                 ),
@@ -6052,7 +6056,7 @@ class _FocusCard extends StatelessWidget {
                     Text(
                       live
                           ? '${L.t('endsAt')} ${focus.endClock} · ${store.focusToday} ${L.t('minutesShort')} ${L.t('today')}'
-                          : L.t('focusSub'),
+                          : L.t('focusSubShort'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: cap(p),
@@ -8681,7 +8685,7 @@ class _FocusOptions extends StatelessWidget {
           _opt(
             c,
             icon: 'sun',
-            label: L.t('keepOn'),
+            label: L.t('keepOnTitle'),
             sub: L.t('keepOnSub'),
             value: store.prefs.focusKeepScreenOn,
             on: (v) {
@@ -10774,6 +10778,8 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
 
+          const SizedBox(height: Tk.gapSection),
+
           // ---------- feedback ----------
           Section(L.t('feedback')),
           Card(
@@ -10812,6 +10818,8 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          const SizedBox(height: Tk.gapSection),
 
           // ---------- focus ----------
           Section(L.t('focus')),
@@ -10893,11 +10901,11 @@ class SettingsScreen extends StatelessWidget {
                 const _Hairline(),
                 SetRow(
                   icon: 'sun',
-                  label: L.t('keepOn'),
+                  label: L.t('keepOnTitle'),
                   sub: L.t('keepOnSub'),
                   trailing: Toggle(
                     value: prefs.focusKeepScreenOn,
-                    sem: L.t('keepOn'),
+                    sem: L.t('keepOnTitle'),
                     on: (v) {
                       prefs.focusKeepScreenOn = v;
                       store.touch();
@@ -10924,6 +10932,8 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          const SizedBox(height: Tk.gapSection),
 
           // ---------- notes ----------
           Section(L.t('notes')),
@@ -10959,6 +10969,8 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          const SizedBox(height: Tk.gapSection),
 
           // ---------- data ----------
           Section(L.t('data')),
