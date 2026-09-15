@@ -5797,9 +5797,7 @@ class HomeScreen extends StatelessWidget {
                 _TodayRing(
                   ratio: goals.isEmpty
                       ? 0
-                      : goals
-                              .map((e) => e.goalRatio)
-                              .reduce((a, b) => a + b) /
+                      : goals.map((e) => e.goalRatio).reduce((a, b) => a + b) /
                           goals.length,
                   count: goals.length,
                 ),
@@ -5810,16 +5808,18 @@ class HomeScreen extends StatelessWidget {
               Trail(trail, height: 40),
               const SizedBox(height: 7),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   for (var i = 0; i < 7; i++)
-                    Text(
-                      weekdayNames()[
-                          nowT().subtract(Duration(days: 6 - i)).weekday -
-                              1][0],
-                      style: over(p).copyWith(
-                        fontSize: 8.5,
-                        color: i == 6 ? p.accent : p.sub,
+                    Expanded(
+                      child: Text(
+                        weekdayNames()[
+                            nowT().subtract(Duration(days: 6 - i)).weekday -
+                                1][0],
+                        textAlign: TextAlign.center,
+                        style: over(p).copyWith(
+                          fontSize: 8.5,
+                          color: i == 6 ? p.accent : p.sub,
+                        ),
                       ),
                     ),
                 ],
@@ -6571,8 +6571,7 @@ class _CountersState extends State<CountersScreen> {
     ];
 
     return Page(
-      max: store.counters.isNotEmpty &&
-              MediaQuery.sizeOf(c).width >= Tk.railMin
+      max: store.counters.isNotEmpty && MediaQuery.sizeOf(c).width >= Tk.railMin
           ? Tk.maxColumns
           : Tk.maxSingle,
       header: Header(
