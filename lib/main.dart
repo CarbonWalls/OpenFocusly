@@ -10837,43 +10837,41 @@ class SettingsScreen extends StatelessWidget {
                 const SizedBox(height: 18),
                 _label(c, L.t('accent')),
                 const SizedBox(height: 10),
-                Row(
+                Wrap(
+                  spacing: 9,
+                  runSpacing: 9,
                   children: [
                     for (final a in Accent.all)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 9),
-                        child: Pressable(
-                          on: () {
-                            prefs.accent = a.key;
-                            store.touch();
-                            store.vib();
-                          },
-                          sem: a.label,
-                          radius: Tk.rPill,
-                          pad: EdgeInsets.zero,
-                          child: AnimatedContainer(
-                            duration: Tk.fast,
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: p.dark ? a.dark : a.light,
-                              border: Border.all(
-                                color: prefs.accent == a.key ? p.text : clear,
-                                width: 2.4,
-                              ),
+                      Pressable(
+                        on: () {
+                          prefs.accent = a.key;
+                          store.touch();
+                          store.vib();
+                        },
+                        sem: a.label,
+                        radius: Tk.rPill,
+                        pad: EdgeInsets.zero,
+                        child: AnimatedContainer(
+                          duration: Tk.fast,
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: p.dark ? a.dark : a.light,
+                            border: Border.all(
+                              color: prefs.accent == a.key ? p.text : clear,
+                              width: 2.4,
                             ),
-                            child: prefs.accent == a.key
-                                ? IconX(
-                                    'check',
-                                    size: 15,
-                                    color: p.dark
-                                        ? const Color(0xFF0B1020)
-                                        : white,
-                                    weight: 2.6,
-                                  )
-                                : null,
                           ),
+                          child: prefs.accent == a.key
+                              ? IconX(
+                                  'check',
+                                  size: 15,
+                                  color:
+                                      p.dark ? const Color(0xFF0B1020) : white,
+                                  weight: 2.6,
+                                )
+                              : null,
                         ),
                       ),
                   ],
