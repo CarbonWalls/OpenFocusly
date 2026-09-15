@@ -6511,7 +6511,10 @@ class _CountersState extends State<CountersScreen> {
     ];
 
     return Page(
-      max: Tk.maxSingle,
+      max: store.counters.isNotEmpty &&
+              MediaQuery.sizeOf(c).width >= Tk.railMin
+          ? Tk.maxColumns
+          : Tk.maxSingle,
       header: Header(
         titleText: L.t('counters'),
         size: 24,
@@ -6579,12 +6582,67 @@ class _CountersState extends State<CountersScreen> {
               cta: L.t('new'),
               on: () => nav.openCounterEditor(),
             )
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(Tk.gutter, 2, Tk.gutter, 112),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: Tk.gapList),
-              itemBuilder: (_, i) => CounterCard(counter: items[i]),
-            ),
+          : MediaQuery.sizeOf(c).width >= Tk.railMin
+              ? _CounterGrid(items: items)
+              : ListView.separated(
+                  padding:
+                      const EdgeInsets.fromLTRB(Tk.gutter, 2, Tk.gutter, 112),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(height: Tk.gapList),
+                  itemBuilder: (_, i) => CounterCard(counter: items[i]),
+                ),
+    );
+  }
+}
+
+/// Two balanced columns once the content pane is wide enough: cards keep
+/// a readable aspect instead of stretching into full-width banners. Falls
+/// back to the plain list when the rail leaves less than a column pair.
+/// Cards in the same row align heights; an odd last card sits alone at
+/// half width by design.
+class _CounterGrid extends StatelessWidget {
+  final List<Counter> items;
+  const _CounterGrid({required this.items});
+
+  @override
+  Widget build(BuildContext c) {
+    return LayoutBuilder(
+      builder: (c, box) {
+        if (box.maxWidth < 680) {
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(Tk.gutter, 2, Tk.gutter, 112),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: Tk.gapList),
+            itemBuilder: (_, i) => CounterCard(counter: items[i]),
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(Tk.gutter, 2, Tk.gutter, 112),
+          itemCount: (items.length + 1) ~/ 2,
+          itemBuilder: (_, i) {
+            final a = items[i * 2];
+            final hasB = i * 2 + 1 < items.length;
+            return Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 0 : Tk.gapList),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: CounterCard(counter: a)),
+                    const SizedBox(width: Tk.gapList),
+                    Expanded(
+                      child: hasB
+                          ? CounterCard(counter: items[i * 2 + 1])
+                          : const SizedBox(),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
