@@ -5750,10 +5750,208 @@ class HomeScreen extends StatelessWidget {
     final trail = store.weekTrail();
     final peak = trail.isEmpty ? 0.0 : trail.reduce((a, b) => a > b ? a : b);
 
+    final wide = MediaQuery.sizeOf(c).width >= Tk.railMin;
+
+    final todayBlock = <Widget>[
+      // ---- today ----
+      Card(
+        pad: const EdgeInsets.fromLTRB(16, 15, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        L.t('today').toUpperCase(),
+                        style: over(p).copyWith(fontSize: 9.5),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            fmt(store.todayDelta.abs()),
+                            style: Tk.num.copyWith(
+                              color: p.text,
+                              fontSize: 34,
+                              letterSpacing: -1.4,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 5),
+                            child: Text(
+                              '${counters.where((e) => e.today != 0).length} ${L.t('counters').toLowerCase()}',
+                              style: cap(p),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                _TodayRing(
+                  ratio: goals.isEmpty
+                      ? 0
+                      : goals
+                              .map((e) => e.goalRatio)
+                              .reduce((a, b) => a + b) /
+                          goals.length,
+                  count: goals.length,
+                ),
+              ],
+            ),
+            if (peak > 0) ...[
+              const SizedBox(height: 14),
+              Trail(trail, height: 40),
+              const SizedBox(height: 7),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  for (var i = 0; i < 7; i++)
+                    Text(
+                      weekdayNames()[
+                          nowT().subtract(Duration(days: 6 - i)).weekday -
+                              1][0],
+                      style: over(p).copyWith(
+                        fontSize: 8.5,
+                        color: i == 6 ? p.accent : p.sub,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+      const SizedBox(height: Tk.gapSection),
+    ];
+
+    final focusBlock = <Widget>[
+      // ---- focus ----
+      Section(L.t('focus')),
+      const _FocusCard(),
+      const SizedBox(height: Tk.gapSection),
+    ];
+
+    final pinnedBlock = <Widget>[
+      if (pinned.isNotEmpty) ...[
+        Section(
+          L.t('pinnedCounters'),
+          trailing: Pressable(
+            subtle: true,
+            radius: Tk.rPill,
+            pad: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            on: () => nav.jump(1),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  L.t('viewAll'),
+                  style: cap(p, c: p.accent).copyWith(fontSize: 11.5),
+                ),
+                const SizedBox(width: 3),
+                IconX('right', size: 12, color: p.accent),
+              ],
+            ),
+          ),
+        ),
+        for (final ct in pinned)
+          Padding(
+            padding: const EdgeInsets.only(bottom: Tk.gapList),
+            child: QuickCounterRow(counter: ct),
+          ),
+        const SizedBox(height: Tk.gapSection - Tk.gapList),
+      ],
+    ];
+
+    final goalsBlock = <Widget>[
+      if (goals.isNotEmpty) ...[
+        Section(L.t('goals')),
+        Card(
+          pad: const EdgeInsets.fromLTRB(14, 6, 14, 8),
+          child: Column(
+            children: [
+              for (var i = 0; i < math.min(goals.length, 4); i++) ...[
+                if (i > 0) const _Hairline(),
+                _GoalRow(counter: goals[i]),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: Tk.gapSection),
+      ],
+    ];
+
+    final moversBlock = <Widget>[
+      if (movers.isNotEmpty) ...[
+        Section(L.t('topCounters')),
+        Card(
+          pad: const EdgeInsets.fromLTRB(14, 4, 14, 4),
+          child: Column(
+            children: [
+              for (var i = 0; i < math.min(movers.length, 5); i++) ...[
+                if (i > 0) const _Hairline(),
+                _MoverRow(counter: movers[i]),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: Tk.gapSection),
+      ],
+    ];
+
+    final notesBlock = <Widget>[
+      if (notes.isNotEmpty) ...[
+        Section(
+          L.t('notes'),
+          trailing: Text('${notes.length}', style: cap(p, c: p.sub)),
+        ),
+        Card(
+          pad: const EdgeInsets.fromLTRB(6, 6, 6, 6),
+          child: Column(
+            children: [
+              for (final n in notes.take(3))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: NoteRow(
+                    note: n,
+                    on: () => showNoteEditor(c, n),
+                    onLong: () => noteMenu(c, n),
+                  ),
+                ),
+              if (notes.length > 3)
+                Pressable(
+                  subtle: true,
+                  radius: 12,
+                  pad: const EdgeInsets.symmetric(vertical: 10),
+                  on: () => nav.jump(3),
+                  child: Center(
+                    child: Text(
+                      '${L.t('viewAll')} · ${notes.length}',
+                      style: cap(p, c: p.accent),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    ];
+
+    final tailBlock = <Widget>[
+      const SizedBox(height: Tk.s4),
+      const _PrivacyCard(compact: true),
+    ];
+
     return AnimatedBuilder(
       animation: focus,
       builder: (_, __) => Page(
-        max: Tk.maxReading,
+        max: wide ? Tk.maxColumns : Tk.maxReading,
         header: Header(
           eyebrow: fullDate(nowT()),
           titleText: greeting,
@@ -5766,191 +5964,53 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(Tk.gutter, 6, Tk.gutter, 112),
-          children: [
-            // ---- today ----
-            Card(
-              pad: const EdgeInsets.fromLTRB(16, 15, 16, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: wide
+            ? ListView(
+                padding:
+                    const EdgeInsets.fromLTRB(Tk.gutter, 6, Tk.gutter, 112),
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              L.t('today').toUpperCase(),
-                              style: over(p).copyWith(fontSize: 9.5),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  fmt(store.todayDelta.abs()),
-                                  style: Tk.num.copyWith(
-                                    color: p.text,
-                                    fontSize: 34,
-                                    letterSpacing: -1.4,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 5),
-                                  child: Text(
-                                    '${counters.where((e) => e.today != 0).length} ${L.t('counters').toLowerCase()}',
-                                    style: cap(p),
-                                  ),
-                                ),
-                              ],
-                            ),
+                            ...todayBlock,
+                            ...focusBlock,
+                            ...notesBlock,
                           ],
                         ),
                       ),
-                      _TodayRing(
-                        ratio: goals.isEmpty
-                            ? 0
-                            : goals
-                                    .map((e) => e.goalRatio)
-                                    .reduce((a, b) => a + b) /
-                                goals.length,
-                        count: goals.length,
+                      const SizedBox(width: Tk.gapList),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...pinnedBlock,
+                            ...goalsBlock,
+                            ...moversBlock,
+                            ...tailBlock,
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                  if (peak > 0) ...[
-                    const SizedBox(height: 14),
-                    Trail(trail, height: 40),
-                    const SizedBox(height: 7),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        for (var i = 0; i < 7; i++)
-                          Text(
-                            weekdayNames()[
-                                nowT().subtract(Duration(days: 6 - i)).weekday -
-                                    1][0],
-                            style: over(p).copyWith(
-                              fontSize: 8.5,
-                              color: i == 6 ? p.accent : p.sub,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
+                ],
+              )
+            : ListView(
+                padding:
+                    const EdgeInsets.fromLTRB(Tk.gutter, 6, Tk.gutter, 112),
+                children: [
+                  ...todayBlock,
+                  ...focusBlock,
+                  ...pinnedBlock,
+                  ...goalsBlock,
+                  ...moversBlock,
+                  ...notesBlock,
+                  ...tailBlock,
                 ],
               ),
-            ),
-            const SizedBox(height: Tk.gapSection),
-
-            // ---- focus ----
-            Section(L.t('focus')),
-            const _FocusCard(),
-            const SizedBox(height: Tk.gapSection),
-
-            if (pinned.isNotEmpty) ...[
-              Section(
-                L.t('pinnedCounters'),
-                trailing: Pressable(
-                  subtle: true,
-                  radius: Tk.rPill,
-                  pad: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  on: () => nav.jump(1),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        L.t('viewAll'),
-                        style: cap(p, c: p.accent).copyWith(fontSize: 11.5),
-                      ),
-                      const SizedBox(width: 3),
-                      IconX('right', size: 12, color: p.accent),
-                    ],
-                  ),
-                ),
-              ),
-              for (final ct in pinned)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: Tk.gapList),
-                  child: QuickCounterRow(counter: ct),
-                ),
-              const SizedBox(height: Tk.gapSection - Tk.gapList),
-            ],
-
-            if (goals.isNotEmpty) ...[
-              Section(L.t('goals')),
-              Card(
-                pad: const EdgeInsets.fromLTRB(14, 6, 14, 8),
-                child: Column(
-                  children: [
-                    for (var i = 0; i < math.min(goals.length, 4); i++) ...[
-                      if (i > 0) const _Hairline(),
-                      _GoalRow(counter: goals[i]),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: Tk.gapSection),
-            ],
-
-            if (movers.isNotEmpty) ...[
-              Section(L.t('topCounters')),
-              Card(
-                pad: const EdgeInsets.fromLTRB(14, 4, 14, 4),
-                child: Column(
-                  children: [
-                    for (var i = 0; i < math.min(movers.length, 5); i++) ...[
-                      if (i > 0) const _Hairline(),
-                      _MoverRow(counter: movers[i]),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: Tk.gapSection),
-            ],
-
-            if (notes.isNotEmpty) ...[
-              Section(
-                L.t('notes'),
-                trailing: Text('${notes.length}', style: cap(p, c: p.sub)),
-              ),
-              Card(
-                pad: const EdgeInsets.fromLTRB(6, 6, 6, 6),
-                child: Column(
-                  children: [
-                    for (final n in notes.take(3))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: NoteRow(
-                          note: n,
-                          on: () => showNoteEditor(c, n),
-                          onLong: () => noteMenu(c, n),
-                        ),
-                      ),
-                    if (notes.length > 3)
-                      Pressable(
-                        subtle: true,
-                        radius: 12,
-                        pad: const EdgeInsets.symmetric(vertical: 10),
-                        on: () => nav.jump(3),
-                        child: Center(
-                          child: Text(
-                            '${L.t('viewAll')} · ${notes.length}',
-                            style: cap(p, c: p.accent),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-            const SizedBox(height: Tk.s4),
-            const _PrivacyCard(compact: true),
-          ],
-        ),
       ),
     );
   }
