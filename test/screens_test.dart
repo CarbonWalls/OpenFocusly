@@ -340,5 +340,21 @@ void main() {
     await shot(t, '21_empty_notes');
     await go(t, 0);
     await shot(t, '22_empty_home');
+
+    // dark + wide: the grid and two-column flow must hold there too.
+    // kept last on purpose: re-seeding content after the empty-state
+    // shots (rather than clearing data after a re-theme) keeps the
+    // golden pipeline deterministic.
+    seed();
+    app.store.prefs.theme = 'dark';
+    app.store.touch();
+    await go(t, 1);
+    await shot(t, '23_wide_dark_counters');
+    await go(t, 0);
+    await shot(t, '24_wide_dark_home');
+    app.store.prefs.theme = 'light';
+    app.store.touch();
+    // let the 350ms debounced save fire so no Timer outlives the test
+    await t.pump(const Duration(milliseconds: 500));
   });
 }
