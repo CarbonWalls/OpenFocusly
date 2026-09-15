@@ -33,10 +33,14 @@ Future<void> registerFonts() async {
   }
 }
 
-String k([int back = 0]) =>
-    app.dayKey(DateTime.now().subtract(Duration(days: back)));
+String k([int back = 0]) => app.dayKey(fixedNow.subtract(Duration(days: back)));
+
+/// A fixed "now" (Tue 15 Sep 2026, 09:42) pinned into the app's clock so every
+/// relative time, day bucket and greeting renders identically on every run.
+final fixedNow = DateTime(2026, 9, 15, 9, 42);
 
 void seed() {
+  app.clock = () => fixedNow;
   app.L.lang = 'en';
   final p = app.store.prefs;
   p.lang = 'en';
@@ -59,7 +63,15 @@ void seed() {
         icon: 'note',
         pinned: true,
         order: 0,
-        log: {k(6): 40, k(5): 30, k(4): 60, k(3): 20, k(2): 50, k(1): 30, k(0): 40}),
+        log: {
+          k(6): 40,
+          k(5): 30,
+          k(4): 60,
+          k(3): 20,
+          k(2): 50,
+          k(1): 30,
+          k(0): 40
+        }),
     app.Counter(
         id: 'c2',
         name: 'Sales',
@@ -122,17 +134,20 @@ void seed() {
 
   app.store.notes = {
     k(0): [
-      app.Note('n1',
+      app.Note(
+          'n1',
           '# Weekly review\n\nShipped the counter redesign. **Three** goals are close.\n\n- [ ] write release notes\n- [ ] plan next sprint',
-          DateTime.now().subtract(const Duration(hours: 3)).millisecondsSinceEpoch,
+          fixedNow.subtract(const Duration(hours: 3)).millisecondsSinceEpoch,
           3,
           true,
           'journal',
           '',
           '',
           'weekly-review.md'),
-      app.Note('n2', 'Call the dentist back',
-          DateTime.now().subtract(const Duration(minutes: 40)).millisecondsSinceEpoch,
+      app.Note(
+          'n2',
+          'Call the dentist back',
+          fixedNow.subtract(const Duration(minutes: 40)).millisecondsSinceEpoch,
           1,
           false,
           'journal',
@@ -141,9 +156,12 @@ void seed() {
           'call-dentist.md'),
     ],
     k(1): [
-      app.Note('n3',
+      app.Note(
+          'n3',
           '# Timer design notes\n\nThe ring should *fill* as the session runs, and the end time matters more than the remaining time.\n\n```dart\nfinal ratio = 1 - remain / total;\n```',
-          DateTime.now().subtract(const Duration(days: 1, hours: 2)).millisecondsSinceEpoch,
+          fixedNow
+              .subtract(const Duration(days: 1, hours: 2))
+              .millisecondsSinceEpoch,
           2,
           false,
           'ideas',
@@ -152,8 +170,10 @@ void seed() {
           'timer-design-notes.md'),
     ],
     k(3): [
-      app.Note('n4', 'Idea: streaks per counter, sparkline on the card',
-          DateTime.now().subtract(const Duration(days: 3)).millisecondsSinceEpoch,
+      app.Note(
+          'n4',
+          'Idea: streaks per counter, sparkline on the card',
+          fixedNow.subtract(const Duration(days: 3)).millisecondsSinceEpoch,
           5,
           false,
           'ideas',
@@ -162,8 +182,10 @@ void seed() {
           'streaks.md'),
     ],
     k(8): [
-      app.Note('n5', 'Focus session completed.\n\n25 min of deep work.',
-          DateTime.now().subtract(const Duration(days: 8)).millisecondsSinceEpoch,
+      app.Note(
+          'n5',
+          'Focus session completed.\n\n25 min of deep work.',
+          fixedNow.subtract(const Duration(days: 8)).millisecondsSinceEpoch,
           0,
           false,
           'journal',
@@ -174,7 +196,12 @@ void seed() {
   };
 
   app.store.focusLog = {
-    k(6): 25, k(5): 50, k(3): 25, k(2): 75, k(1): 25, k(0): 25
+    k(6): 25,
+    k(5): 50,
+    k(3): 25,
+    k(2): 75,
+    k(1): 25,
+    k(0): 25
   };
   app.store.undos.clear();
   app.focus.reset();
@@ -209,11 +236,10 @@ void main() {
 
   setUpAll(() async {
     await registerFonts();
-    final messenger = TestWidgetsFlutterBinding.ensureInitialized()
-        .defaultBinaryMessenger;
+    final messenger =
+        TestWidgetsFlutterBinding.ensureInitialized().defaultBinaryMessenger;
     messenger.setMockMethodCallHandler(saf, (call) async => null);
-    messenger.setMockStreamHandler(
-        const EventChannel('saf/volume'),
+    messenger.setMockStreamHandler(const EventChannel('saf/volume'),
         MockStreamHandler.inline(onListen: (args, events) {}));
   });
 
@@ -262,7 +288,8 @@ void main() {
     app.store.touch();
     await go(t, 0);
     // ignore: avoid_print
-    print('GEO dark ${t.getRect(find.byType(app.Page).first)} shell ${t.getRect(find.byType(app.Shell))}');
+    print(
+        'GEO dark ${t.getRect(find.byType(app.Page).first)} shell ${t.getRect(find.byType(app.Shell))}');
     await shot(t, '11_dark_home');
     await go(t, 1);
     await shot(t, '12_dark_counters');

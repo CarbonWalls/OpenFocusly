@@ -175,7 +175,7 @@ String dayKey(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
 String uid() =>
-    '${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}${math.Random().nextInt(9999).toRadixString(36)}';
+    '${nowT().microsecondsSinceEpoch.toRadixString(36)}${math.Random().nextInt(9999).toRadixString(36)}';
 
 double? numOf(String s) => double.tryParse(s.trim().replaceAll(',', '.'));
 
@@ -186,10 +186,16 @@ String fmtClock(int seconds) => '${seconds ~/ 60}:${two(seconds % 60)}';
 String fmtClockLong(int seconds) =>
     '${seconds ~/ 3600}:${two((seconds % 3600) ~/ 60)}:${two(seconds % 60)}';
 
+/// The app's single clock. Production reads the wall clock; the golden-test
+/// harness pins [clock] to a fixed instant so relative times, day buckets and
+/// greetings render identically on every run.
+DateTime Function()? clock;
+DateTime nowT() => (clock ?? DateTime.now)();
+
 /// "now / 4m / 14:32 / yesterday / 12 Mar" — notes, history, day lists.
 String relTime(int ts) {
   final d = DateTime.fromMillisecondsSinceEpoch(ts);
-  final now = DateTime.now();
+  final now = nowT();
   final diff = now.difference(d);
   if (diff.inMinutes < 1) return L.t('now');
   if (diff.inMinutes < 60) return '${diff.inMinutes}m';
@@ -406,7 +412,8 @@ TextStyle body(
   double s = 14,
   FontWeight w = FontWeight.w400,
   Color? c,
-}) => Tk.body.copyWith(color: c ?? p.text2, fontSize: s, fontWeight: w);
+}) =>
+    Tk.body.copyWith(color: c ?? p.text2, fontSize: s, fontWeight: w);
 TextStyle cap(Pal p, {Color? c}) =>
     Tk.label.copyWith(color: c ?? p.sub, fontSize: 12);
 TextStyle over(Pal p, {Color? c}) =>
@@ -542,7 +549,6 @@ String fmtTs(int ts) {
   String z(int n) => n.toString().padLeft(2, '0');
   return '${z(d.day)}/${z(d.month)}/${d.year} ${z(d.hour)}:${z(d.minute)}';
 }
-
 
 const it = {
   'home': 'Home',
@@ -850,7 +856,7 @@ class Counter {
     if (usesManualMoney && moneyValue == null) moneyValue = value * mult;
   }
 
-  double get today => log[dayKey(DateTime.now())] ?? 0;
+  double get today => log[dayKey(nowT())] ?? 0;
 
   bool get hasGoal =>
       (goalV != null && goalV! > 0) ||
@@ -887,7 +893,7 @@ class Counter {
 
   /// Last [n] daily totals, oldest first, including empty days.
   List<double> trail([int n = 14]) {
-    final now = DateTime.now();
+    final now = nowT();
     final out = <double>[];
     for (var i = n - 1; i >= 0; i--) {
       final d = now.subtract(Duration(days: i));
@@ -898,7 +904,7 @@ class Counter {
 
   int get streak {
     var hits = 0;
-    final now = DateTime.now();
+    final now = nowT();
     for (var i = 0; i < 365; i++) {
       final d = now.subtract(Duration(days: i));
       final v = log[dayKey(d)] ?? 0;
@@ -913,50 +919,49 @@ class Counter {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'group': group,
-    'symbol': symbol,
-    'value': value,
-    'step': step,
-    'mult': mult,
-    'moneyValue': moneyValue,
-    'moneyStep': moneyStep,
-    'moneyEnabled': moneyEnabled,
-    'goalV': goalV,
-    'goalM': goalM,
-    'goalAction': goalAction,
-    'pinned': pinned,
-    'stopped': stopped,
-    'order': order,
-    if (icon != 'tag') 'icon': icon,
-    if (log.isNotEmpty) 'log': log,
-  };
+        'id': id,
+        'name': name,
+        'group': group,
+        'symbol': symbol,
+        'value': value,
+        'step': step,
+        'mult': mult,
+        'moneyValue': moneyValue,
+        'moneyStep': moneyStep,
+        'moneyEnabled': moneyEnabled,
+        'goalV': goalV,
+        'goalM': goalM,
+        'goalAction': goalAction,
+        'pinned': pinned,
+        'stopped': stopped,
+        'order': order,
+        if (icon != 'tag') 'icon': icon,
+        if (log.isNotEmpty) 'log': log,
+      };
 
   factory Counter.fromJson(Map<String, dynamic> j) => Counter(
-    id: j['id'] as String? ?? uid(),
-    name: j['name'] as String? ?? 'Counter',
-    group: j['group'] as String? ?? '',
-    symbol: j['symbol'] as String? ?? '€',
-    value: (j['value'] as num? ?? 0).toDouble(),
-    step: (j['step'] as num? ?? 1).toDouble(),
-    mult: (j['mult'] as num? ?? 1).toDouble(),
-    moneyValue: (j['moneyValue'] as num?)?.toDouble(),
-    moneyStep: (j['moneyStep'] as num?)?.toDouble(),
-    moneyEnabled:
-        j['moneyEnabled'] as bool? ??
-        ((j['moneyStep'] as num?) != null || (j['goalM'] as num?) != null),
-    goalV: (j['goalV'] as num?)?.toDouble(),
-    goalM: (j['goalM'] as num?)?.toDouble(),
-    goalAction: j['goalAction'] as String? ?? 'continue',
-    pinned: j['pinned'] as bool? ?? false,
-    stopped: j['stopped'] as bool? ?? false,
-    order: (j['order'] as num? ?? 0).toInt(),
-    icon: j['icon'] as String? ?? 'tag',
-    log: (j['log'] as Map? ?? {}).map(
-      (k, v) => MapEntry(k.toString(), (v as num? ?? 0).toDouble()),
-    ),
-  )..ensureMoneySeed();
+        id: j['id'] as String? ?? uid(),
+        name: j['name'] as String? ?? 'Counter',
+        group: j['group'] as String? ?? '',
+        symbol: j['symbol'] as String? ?? '€',
+        value: (j['value'] as num? ?? 0).toDouble(),
+        step: (j['step'] as num? ?? 1).toDouble(),
+        mult: (j['mult'] as num? ?? 1).toDouble(),
+        moneyValue: (j['moneyValue'] as num?)?.toDouble(),
+        moneyStep: (j['moneyStep'] as num?)?.toDouble(),
+        moneyEnabled: j['moneyEnabled'] as bool? ??
+            ((j['moneyStep'] as num?) != null || (j['goalM'] as num?) != null),
+        goalV: (j['goalV'] as num?)?.toDouble(),
+        goalM: (j['goalM'] as num?)?.toDouble(),
+        goalAction: j['goalAction'] as String? ?? 'continue',
+        pinned: j['pinned'] as bool? ?? false,
+        stopped: j['stopped'] as bool? ?? false,
+        order: (j['order'] as num? ?? 0).toInt(),
+        icon: j['icon'] as String? ?? 'tag',
+        log: (j['log'] as Map? ?? {}).map(
+          (k, v) => MapEntry(k.toString(), (v as num? ?? 0).toDouble()),
+        ),
+      )..ensureMoneySeed();
 }
 
 class Note {
@@ -1005,11 +1010,12 @@ class Note {
         .join(' ')
         .replaceAll(RegExp(r'`+'), '')
         .replaceAll(RegExp(r'[*_~>#]'), '')
-        .replaceAll(RegExp(r'^\s*[-+]\s+'), '')
+        .replaceAll(RegExp(r'\[[ xX]\]'), '')
+        .replaceAll(RegExp(r'(?:^|\s)[-+]\s+'), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
-    if (clean.isNotEmpty) return clean;
-    return lines.isEmpty ? '' : lines.first.replaceAll(RegExp(r'^#+\s*'), '');
+    if (clean.isEmpty || clean == heading) return '';
+    return clean;
   }
 
   int get words => text
@@ -1019,22 +1025,22 @@ class Note {
       .length;
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'x': text,
-    'ts': ts,
-    'c': color,
-    'pinned': pinned,
-    'folder': folder,
-    'folderUri': folderUri,
-    'uri': uri,
-    'fileName': fileName,
-  };
+        'id': id,
+        'x': text,
+        'ts': ts,
+        'c': color,
+        'pinned': pinned,
+        'folder': folder,
+        'folderUri': folderUri,
+        'uri': uri,
+        'fileName': fileName,
+      };
 
   factory Note.fromJson(Map<String, dynamic> j, {String fallbackFolder = ''}) =>
       Note(
         j['id'] as String? ?? uid(),
         j['x'] as String? ?? '',
-        (j['ts'] as num? ?? DateTime.now().millisecondsSinceEpoch).toInt(),
+        (j['ts'] as num? ?? nowT().millisecondsSinceEpoch).toInt(),
         (j['c'] as num? ?? 0).toInt(),
         j['pinned'] as bool? ?? false,
         j['folder'] as String? ?? fallbackFolder,
@@ -1062,21 +1068,21 @@ class Prefs {
   String focusSoundUri = '';
 
   Map<String, dynamic> toJson() => {
-    'theme': theme,
-    'lang': lang,
-    'vib': vibration,
-    'sound': sound,
-    'ggV': goalV,
-    'ggM': goalM,
-    'notesFolder': notesFolder,
-    'notesFolderUri': notesFolderUri,
-    'accent': accent,
-    'focusMinutes': focusMinutes,
-    'focusAutoNote': focusAutoNote,
-    'focusKeepScreenOn': focusKeepScreenOn,
-    'homeLayout': homeLayout,
-    'focusSoundUri': focusSoundUri,
-  };
+        'theme': theme,
+        'lang': lang,
+        'vib': vibration,
+        'sound': sound,
+        'ggV': goalV,
+        'ggM': goalM,
+        'notesFolder': notesFolder,
+        'notesFolderUri': notesFolderUri,
+        'accent': accent,
+        'focusMinutes': focusMinutes,
+        'focusAutoNote': focusAutoNote,
+        'focusKeepScreenOn': focusKeepScreenOn,
+        'homeLayout': homeLayout,
+        'focusSoundUri': focusSoundUri,
+      };
 
   factory Prefs.fromJson(Map<String, dynamic> j) {
     final p = Prefs();
@@ -1173,18 +1179,18 @@ class Store extends ChangeNotifier {
     try {
       await File('$dir/state.json').writeAsString(jsonEncode(toJson()));
       dirtySave = false;
-      savedAt = DateTime.now().millisecondsSinceEpoch;
+      savedAt = nowT().millisecondsSinceEpoch;
     } catch (_) {}
   }
 
   Map<String, dynamic> toJson() => {
-    'counters': counters.map((e) => e.toJson()).toList(),
-    'notes': notes.map(
-      (k, v) => MapEntry(k, v.map((e) => e.toJson()).toList()),
-    ),
-    'prefs': prefs.toJson(),
-    'focus': focusLog,
-  };
+        'counters': counters.map((e) => e.toJson()).toList(),
+        'notes': notes.map(
+          (k, v) => MapEntry(k, v.map((e) => e.toJson()).toList()),
+        ),
+        'prefs': prefs.toJson(),
+        'focus': focusLog,
+      };
 
   void load(Map<String, dynamic> j) {
     counters = (j['counters'] as List? ?? [])
@@ -1325,9 +1331,8 @@ class Store extends ChangeNotifier {
     for (final file in files) {
       final uri = (file['uri'] as String? ?? '').trim();
       final name = (file['name'] as String? ?? 'nota.md').trim();
-      final modified =
-          (file['lastModified'] as num?)?.toInt() ??
-          DateTime.now().millisecondsSinceEpoch;
+      final modified = (file['lastModified'] as num?)?.toInt() ??
+          nowT().millisecondsSinceEpoch;
 
       if (uri.isEmpty || knownUris.contains(uri)) continue;
 
@@ -1378,12 +1383,12 @@ class Store extends ChangeNotifier {
 
   double get todayDelta => counters.fold(0.0, (a, c) => a + c.today);
 
-  int get focusToday => (focusLog[dayKey(DateTime.now())] ?? 0).round();
+  int get focusToday => (focusLog[dayKey(nowT())] ?? 0).round();
 
   int get focusWeek {
     var sum = 0.0;
     for (var i = 0; i < 7; i++) {
-      sum += focusLog[dayKey(DateTime.now().subtract(Duration(days: i)))] ?? 0;
+      sum += focusLog[dayKey(nowT().subtract(Duration(days: i)))] ?? 0;
     }
     return sum.round();
   }
@@ -1393,20 +1398,20 @@ class Store extends ChangeNotifier {
     final out = <double>[];
     for (var i = n - 1; i >= 0; i--) {
       out.add(
-        focusLog[dayKey(DateTime.now().subtract(Duration(days: i)))] ?? 0,
+        focusLog[dayKey(nowT().subtract(Duration(days: i)))] ?? 0,
       );
     }
     return out;
   }
 
-  List<Note> get todayNotes => notes[dayKey(DateTime.now())] ?? const <Note>[];
+  List<Note> get todayNotes => notes[dayKey(nowT())] ?? const <Note>[];
 
   int get doneGoals => counters
       .where((c) => c.goalV != null && c.goalV! > 0 && c.value >= c.goalV!)
       .length;
 
   List<double> weekTrail() {
-    final now = DateTime.now();
+    final now = nowT();
     final out = <double>[];
     for (var i = 6; i >= 0; i--) {
       final k = dayKey(now.subtract(Duration(days: i)));
@@ -1422,7 +1427,7 @@ class Store extends ChangeNotifier {
 
   int get weekStreak {
     var hits = 0;
-    final now = DateTime.now();
+    final now = nowT();
     for (var i = 6; i >= 0; i--) {
       final k = dayKey(now.subtract(Duration(days: i)));
       final active =
@@ -1506,7 +1511,7 @@ class Store extends ChangeNotifier {
         c.id,
         delta > 0 ? '+' : '-',
         delta,
-        DateTime.now().millisecondsSinceEpoch,
+        nowT().millisecondsSinceEpoch,
         beforeValue,
         beforeMoney,
         beforeStopped,
@@ -1516,7 +1521,7 @@ class Store extends ChangeNotifier {
 
     c.value += delta;
 
-    final key = dayKey(DateTime.now());
+    final key = dayKey(nowT());
     c.log[key] = (c.log[key] ?? 0) + delta;
 
     if (c.usesManualMoney) {
@@ -1524,13 +1529,11 @@ class Store extends ChangeNotifier {
       c.moneyValue = (c.moneyValue ?? 0) + delta * (c.moneyStep ?? 0);
     }
 
-    final valueGoalHit =
-        c.goalV != null &&
+    final valueGoalHit = c.goalV != null &&
         c.goalV! > 0 &&
         beforeValue < c.goalV! &&
         c.value >= c.goalV!;
-    final moneyGoalHit =
-        c.goalM != null &&
+    final moneyGoalHit = c.goalM != null &&
         c.goalM! > 0 &&
         beforeMoney < c.goalM! &&
         c.money >= c.goalM!;
@@ -1548,7 +1551,7 @@ class Store extends ChangeNotifier {
       }
       if (!silent) {
         goalPulse = c.id;
-        goalPulseAt = DateTime.now().millisecondsSinceEpoch;
+        goalPulseAt = nowT().millisecondsSinceEpoch;
       }
     }
 
@@ -1576,7 +1579,7 @@ class Store extends ChangeNotifier {
   }
 
   void logFocus(int minutes) {
-    final k = dayKey(DateTime.now());
+    final k = dayKey(nowT());
     focusLog[k] = (focusLog[k] ?? 0) + minutes;
     touch();
   }
@@ -1594,17 +1597,14 @@ class Store extends ChangeNotifier {
         : folder.trim();
     final fu = folderUri.isEmpty ? prefs.notesFolderUri : folderUri;
 
-    final baseName = text
-        .split('\n')
-        .first
-        .trim()
-        .replaceFirst(RegExp(r'^#+\s*'), '');
+    final baseName =
+        text.split('\n').first.trim().replaceFirst(RegExp(r'^#+\s*'), '');
     final safeName = baseName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
 
     final n = Note(
       uid(),
       text,
-      DateTime.now().millisecondsSinceEpoch,
+      nowT().millisecondsSinceEpoch,
       color,
       false,
       f,
@@ -1817,6 +1817,10 @@ const it2 = {
   'undo': 'annulla',
   'ready': 'pronto',
   'nameHint': 'es. Pagine lette',
+  'soundSub': 'Suono sui pulsanti + e −',
+  'privacyLead':
+      'Tutto resta su questo dispositivo: contatori, note e timer sono file che controlli tu.',
+  'privacyNet': 'Nessun permesso internet, nessuna analisi.',
   'appName': 'OpenFocusly',
   'appTag': 'contatori, focus, note.',
   'autoNote': 'Nota automatica',
@@ -1851,7 +1855,6 @@ const it2 = {
   'stopped': 'In pausa',
   'vibrationSub': 'Piccole vibrazioni sui tocchi',
   'whatsNew': 'Novità',
-
   'month': 'mese',
   'undone': 'azione annullata',
   'saved': 'salvato',
@@ -1953,7 +1956,11 @@ const en2 = {
   'undo': 'undo',
   'ready': 'ready',
   'nameHint': 'e.g. Pages read',
+  'appName': 'OpenFocusly',
   'soundSub': 'Click on the + and − buttons',
+  'privacyLead':
+      'Everything stays on this device: counters, notes and timer data are files you control.',
+  'privacyNet': 'No internet permission, no analytics.',
   'appTag': 'counters, focus, notes.',
   'autoNote': 'Auto note',
   'autoNoteSub': 'Creates a note when a session ends.',
@@ -1988,7 +1995,6 @@ const en2 = {
   'stopped': 'Paused',
   'vibrationSub': 'Light buzz on taps',
   'whatsNew': 'What’s new',
-
   'month': 'month',
   'undone': 'action undone',
   'saved': 'saved',
@@ -2204,9 +2210,8 @@ class _ToastLayerState extends State<_ToastLayer> {
                         IconX(
                           widget.item.icon,
                           size: 16,
-                          color: widget.item.bad
-                              ? p.bad
-                              : const Color(0xFF7FE0A8),
+                          color:
+                              widget.item.bad ? p.bad : const Color(0xFF7FE0A8),
                         ),
                         const SizedBox(width: 9),
                         Flexible(
@@ -2278,9 +2283,9 @@ class IconX extends StatelessWidget {
 
   @override
   Widget build(BuildContext c) => CustomPaint(
-    size: Size.square(size),
-    painter: _Painter(name, color ?? ThemeScope.of(c).pal.text, weight),
-  );
+        size: Size.square(size),
+        painter: _Painter(name, color ?? ThemeScope.of(c).pal.text, weight),
+      );
 }
 
 class _Painter extends CustomPainter {
@@ -3014,11 +3019,11 @@ class _PressableState extends State<Pressable> {
     final shown = _down
         ? pressed
         : (_hover && !_down
-              ? Color.alphaBlend(
-                  (widget.subtle ? p.text : p.accent).withValues(alpha: .055),
-                  base,
-                )
-              : base);
+            ? Color.alphaBlend(
+                (widget.subtle ? p.text : p.accent).withValues(alpha: .055),
+                base,
+              )
+            : base);
 
     return Semantics(
       button: true,
@@ -3045,8 +3050,7 @@ class _PressableState extends State<Pressable> {
           return KeyEventResult.ignored;
         },
         onFocusChange: (has) {
-          _kb =
-              FocusManager.instance.highlightMode ==
+          _kb = FocusManager.instance.highlightMode ==
               FocusHighlightMode.traditional;
           if (!has && _down) {
             setState(() => _down = false);
@@ -3068,9 +3072,8 @@ class _PressableState extends State<Pressable> {
             onLongPressStart: widget.onLongStart == null
                 ? null
                 : (_) => widget.onLongStart!(),
-            onLongPressEnd: widget.onLongEnd == null
-                ? null
-                : (_) => widget.onLongEnd!(),
+            onLongPressEnd:
+                widget.onLongEnd == null ? null : (_) => widget.onLongEnd!(),
             onLongPressCancel: widget.onLongEnd,
             onTapDown: _enabled
                 ? (_) {
@@ -3095,8 +3098,8 @@ class _PressableState extends State<Pressable> {
                   border: widget.border != null
                       ? Border.all(color: widget.border!)
                       : (_kb && _fn.hasFocus
-                            ? Border.all(color: p.accent, width: 1.6)
-                            : null),
+                          ? Border.all(color: p.accent, width: 1.6)
+                          : null),
                   boxShadow: widget.filled
                       ? [
                           BoxShadow(
@@ -3143,25 +3146,25 @@ class Btn extends StatelessWidget {
 
   @override
   Widget build(BuildContext c) => Pressable(
-    on: on,
-    onLong: onLong,
-    filled: filled,
-    pad: pad,
-    radius: radius,
-    bg: bg,
-    border: border,
-    sem: sem,
-    child: DefaultTextStyle.merge(
-      style: TextStyle(
-        color: filled
-            ? ThemeScope.of(c).pal.accentInk
-            : ThemeScope.of(c).pal.text,
-        fontWeight: FontWeight.w700,
-        fontSize: 13.5,
-      ),
-      child: child,
-    ),
-  );
+        on: on,
+        onLong: onLong,
+        filled: filled,
+        pad: pad,
+        radius: radius,
+        bg: bg,
+        border: border,
+        sem: sem,
+        child: DefaultTextStyle.merge(
+          style: TextStyle(
+            color: filled
+                ? ThemeScope.of(c).pal.accentInk
+                : ThemeScope.of(c).pal.text,
+            fontWeight: FontWeight.w700,
+            fontSize: 13.5,
+          ),
+          child: child,
+        ),
+      );
 }
 
 /// 44x44 minimum touch target with a visible label for screen readers.
@@ -3439,9 +3442,8 @@ class _FieldState extends State<Field> {
                           if (widget.maxChars != null)
                             LengthLimitingTextInputFormatter(widget.maxChars),
                         ],
-                        textAlign: widget.alignEnd
-                            ? TextAlign.end
-                            : TextAlign.start,
+                        textAlign:
+                            widget.alignEnd ? TextAlign.end : TextAlign.start,
                         enableInteractiveSelection: true,
                       ),
                     ],
@@ -4307,9 +4309,8 @@ class PrimaryBtn extends StatelessWidget {
       pad: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
       bg: danger ? p.bad : ink,
       child: Row(
-        mainAxisAlignment: full
-            ? MainAxisAlignment.center
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            full ? MainAxisAlignment.center : MainAxisAlignment.start,
         mainAxisSize: full ? MainAxisSize.max : MainAxisSize.min,
         children: [
           if (icon != null) ...[
@@ -4355,9 +4356,8 @@ class GhostBtn extends StatelessWidget {
       border: p.line,
       child: Row(
         mainAxisSize: full ? MainAxisSize.max : MainAxisSize.min,
-        mainAxisAlignment: full
-            ? MainAxisAlignment.center
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            full ? MainAxisAlignment.center : MainAxisAlignment.start,
         children: [
           if (icon != null) ...[
             IconX(icon!, size: 16, color: p.text2),
@@ -4513,20 +4513,21 @@ class _SheetRoute<T> extends PopupRoute<T> {
     BuildContext context,
     Animation<double> animation,
     Animation<double> secondaryAnimation,
-  ) => DefaultTextStyle(
-    style: body(pal),
-    child: ThemeScope(
-      pal: pal,
-      child: _SheetBody(
-        animation: animation,
-        drag: _Drag,
-        close: () => Navigator.of(context).pop(),
-        title: title,
-        max: max,
-        child: child,
-      ),
-    ),
-  );
+  ) =>
+      DefaultTextStyle(
+        style: body(pal),
+        child: ThemeScope(
+          pal: pal,
+          child: _SheetBody(
+            animation: animation,
+            drag: _Drag,
+            close: () => Navigator.of(context).pop(),
+            title: title,
+            max: max,
+            child: child,
+          ),
+        ),
+      );
 }
 
 class _SheetBody extends StatelessWidget {
@@ -4743,9 +4744,8 @@ class _MenuRow extends StatelessWidget {
                 child: IconX(
                   item.checked ? 'check' : item.icon,
                   size: 15,
-                  color: item.danger
-                      ? p.bad
-                      : (item.checked ? p.accent : p.text2),
+                  color:
+                      item.danger ? p.bad : (item.checked ? p.accent : p.text2),
                 ),
               ),
             ),
@@ -4924,10 +4924,12 @@ class FocusEngine extends ChangeNotifier {
   /// Increments each completed session (for a subtle celebration animation).
   int completions = 0;
 
-  FocusEngine() : durationSec = 25 * 60, _remainMs = 25 * 60 * 1000;
+  FocusEngine()
+      : durationSec = 25 * 60,
+        _remainMs = 25 * 60 * 1000;
 
   int get remainMs => running
-      ? math.max(0, _endAt! - DateTime.now().millisecondsSinceEpoch)
+      ? math.max(0, _endAt! - nowT().millisecondsSinceEpoch)
       : _remainMs;
 
   int get secondsLeft => (remainMs / 1000).ceil();
@@ -4939,7 +4941,7 @@ class FocusEngine extends ChangeNotifier {
 
   String get endClock {
     if (!running) return '';
-    final at = DateTime.now().add(Duration(milliseconds: remainMs));
+    final at = nowT().add(Duration(milliseconds: remainMs));
     return '${two(at.hour)}:${two(at.minute)}';
   }
 
@@ -4971,7 +4973,7 @@ class FocusEngine extends ChangeNotifier {
       return;
     }
     if (remainMs <= 0) _remainMs = durationSec * 1000;
-    _endAt = DateTime.now().millisecondsSinceEpoch + remainMs;
+    _endAt = nowT().millisecondsSinceEpoch + remainMs;
     running = true;
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(milliseconds: 200), (_) => _tick());
@@ -5021,7 +5023,7 @@ class FocusEngine extends ChangeNotifier {
     store.logFocus(minutes);
     if (store.prefs.focusAutoNote) {
       store.addNote(
-        dayKey(DateTime.now()),
+        dayKey(nowT()),
         'Focus session completed.\n\n$minutes min of deep work.',
         3,
         folder: store.prefs.notesFolder.isEmpty
@@ -5163,13 +5165,13 @@ const navItems = [
 ];
 
 int screenOf(String label) => switch (label) {
-  'home' => 0,
-  'counters' => 1,
-  'time' => 2,
-  'notes' => 3,
-  'settings' => 4,
-  _ => 5,
-};
+      'home' => 0,
+      'counters' => 1,
+      'time' => 2,
+      'notes' => 3,
+      'settings' => 4,
+      _ => 5,
+    };
 
 class Shell extends StatelessWidget {
   final Widget child;
@@ -5242,7 +5244,8 @@ class _AppScrollBehavior extends ScrollBehavior {
     BuildContext context,
     Widget child,
     ScrollableDetails details,
-  ) => child;
+  ) =>
+      child;
 
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) =>
@@ -5275,13 +5278,12 @@ class _ScrollOverlayState extends State<ScrollOverlay> {
           _height = (_viewport * _viewport / (extent + _viewport))
               .clamp(28.0, m.viewportDimension.toDouble())
               .toDouble();
-          _top =
-              m.pixels.clamp(0.0, extent).toDouble() *
+          _top = m.pixels.clamp(0.0, extent).toDouble() *
               (_viewport - _height) /
               extent;
         });
       }
-      _stamp = DateTime.now().microsecondsSinceEpoch;
+      _stamp = nowT().microsecondsSinceEpoch;
       _fade?.cancel();
       _fade = Timer(const Duration(milliseconds: 1100), () {
         if (mounted) setState(() => _stamp = null);
@@ -5491,8 +5493,7 @@ class _RailItem extends StatelessWidget {
   Widget build(BuildContext c) {
     final p = ThemeScope.of(c).pal;
     final target = screenOf(label);
-    final active =
-        nav.screen == target ||
+    final active = nav.screen == target ||
         (target == 4 && nav.screen == 5) ||
         (target == 1 && nav.screen == 8);
 
@@ -5675,7 +5676,7 @@ class _BottomItem extends StatelessWidget {
 // ============================== HOME ==============================
 
 String get greeting {
-  final h = DateTime.now().hour;
+  final h = nowT().hour;
   if (h < 5) return L.t('evening');
   if (h < 12) return L.t('morning');
   if (h < 18) return L.t('afternoon');
@@ -5695,7 +5696,7 @@ class HomeScreen extends StatelessWidget {
     if (fresh) {
       return Page(
         max: Tk.maxReading,
-        header: Header(titleText: L.t('home'), sub: fullDate(DateTime.now())),
+        header: Header(titleText: L.t('home'), sub: fullDate(nowT())),
         child: ListView(
           padding: const EdgeInsets.fromLTRB(Tk.gutter, 8, Tk.gutter, 110),
           children: [
@@ -5750,7 +5751,7 @@ class HomeScreen extends StatelessWidget {
       builder: (_, __) => Page(
         max: Tk.maxReading,
         header: Header(
-          eyebrow: fullDate(DateTime.now()),
+          eyebrow: fullDate(nowT()),
           titleText: greeting,
           size: 24,
           actions: [
@@ -5809,9 +5810,9 @@ class HomeScreen extends StatelessWidget {
                         ratio: goals.isEmpty
                             ? 0
                             : goals
-                                      .map((e) => e.goalRatio)
-                                      .reduce((a, b) => a + b) /
-                                  goals.length,
+                                    .map((e) => e.goalRatio)
+                                    .reduce((a, b) => a + b) /
+                                goals.length,
                         count: goals.length,
                       ),
                     ],
@@ -5825,10 +5826,9 @@ class HomeScreen extends StatelessWidget {
                       children: [
                         for (var i = 0; i < 7; i++)
                           Text(
-                            weekdayNames()[DateTime.now()
-                                    .subtract(Duration(days: 6 - i))
-                                    .weekday -
-                                1][0],
+                            weekdayNames()[
+                                nowT().subtract(Duration(days: 6 - i)).weekday -
+                                    1][0],
                             style: over(p).copyWith(
                               fontSize: 8.5,
                               color: i == 6 ? p.accent : p.sub,
@@ -6135,9 +6135,17 @@ class QuickCounterRow extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      '${counter.symbol} ${fmtK(counter.value)}',
+                      fmtK(counter.value),
                       style: cap(p, c: p.text2).copyWith(fontSize: 11.5),
                     ),
+                    if (counter.moneyEnabled &&
+                        (counter.usesManualMoney || counter.mult != 0)) ...[
+                      const SizedBox(width: 7),
+                      Text(
+                        '· ${counter.symbol} ${fmtK(counter.money)}',
+                        style: cap(p, c: p.text2).copyWith(fontSize: 11.5),
+                      ),
+                    ],
                     if (counter.hasGoal) ...[
                       const SizedBox(width: 7),
                       Text(
@@ -6385,8 +6393,7 @@ class _CountersState extends State<CountersScreen> {
     final query = q.text.trim().toLowerCase();
     final out = store.counters.where((c) {
       final fm = folder.isEmpty || c.group == folder;
-      final tm =
-          query.isEmpty ||
+      final tm = query.isEmpty ||
           c.name.toLowerCase().contains(query) ||
           c.group.toLowerCase().contains(query);
       return fm && tm;
@@ -6667,7 +6674,8 @@ class CounterCard extends StatelessWidget {
   }
 
   Widget _card(BuildContext c, Pal p, {bool controls = true}) {
-    final money = counter.moneyEnabled && counter.mult != 0;
+    final money =
+        counter.moneyEnabled && (counter.usesManualMoney || counter.mult != 0);
     return Card(
       pad: const EdgeInsets.fromLTRB(12, 12, 10, 12),
       on: enabled ? () => nav.openCounterDetail(counter) : null,
@@ -6714,15 +6722,6 @@ class CounterCard extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          counter.symbol,
-                          style: TextStyle(
-                            color: p.sub,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
                         AnimatedNum(
                           counter.value,
                           style: Tk.num.copyWith(
@@ -6846,9 +6845,8 @@ class _SwipeBg extends StatelessWidget {
         border: Border.all(color: ink.withValues(alpha: .35)),
       ),
       child: Row(
-        mainAxisAlignment: end
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            end ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           if (end) ...[
             Text(
@@ -6960,18 +6958,17 @@ class _CounterDetailState extends State<CounterDetailScreen> {
   @override
   void initState() {
     super.initState();
-    volumeSubscription = const EventChannel('saf/volume')
-        .receiveBroadcastStream()
-        .listen(
-          (event) {
-            if (!volumeButtons || !mounted) return;
-            if (event == 'up') _bump();
-            if (event == 'down') _bump(-counter.step);
-          },
-          onError: (_) {
-            // Older builds have no volume stream; the on-screen buttons still work.
-          },
-        );
+    volumeSubscription =
+        const EventChannel('saf/volume').receiveBroadcastStream().listen(
+      (event) {
+        if (!volumeButtons || !mounted) return;
+        if (event == 'up') _bump();
+        if (event == 'down') _bump(-counter.step);
+      },
+      onError: (_) {
+        // Older builds have no volume stream; the on-screen buttons still work.
+      },
+    );
   }
 
   @override
@@ -6995,7 +6992,7 @@ class _CounterDetailState extends State<CounterDetailScreen> {
     store.sfx(d > 0);
 
     if (stopwatch && startedAt != null) {
-      final now = DateTime.now();
+      final now = nowT();
       watchHistory.add(
         _WatchEntry(
           d > 0 ? '+' : '-',
@@ -7029,15 +7026,13 @@ class _CounterDetailState extends State<CounterDetailScreen> {
     setState(() {
       stopwatch = !stopwatch;
       if (stopwatch) {
-        startedAt = DateTime.now();
+        startedAt = nowT();
         elapsedMs = 0;
         watchTimer?.cancel();
         watchTimer = Timer.periodic(const Duration(milliseconds: 60), (_) {
           if (!mounted || startedAt == null) return;
           setState(
-            () => elapsedMs = DateTime.now()
-                .difference(startedAt!)
-                .inMilliseconds,
+            () => elapsedMs = nowT().difference(startedAt!).inMilliseconds,
           );
         });
       } else {
@@ -7168,7 +7163,7 @@ class _CounterDetailState extends State<CounterDetailScreen> {
 
   /// Day-by-day history for the last two weeks, oldest at the top.
   Widget _history(Pal p) {
-    final now = DateTime.now();
+    final now = nowT();
     final vals = counter.trail(14);
     var mx = 0.0;
     for (final v in vals) {
@@ -7220,8 +7215,8 @@ class _CounterDetailState extends State<CounterDetailScreen> {
                                 color: v < 0
                                     ? p.bad
                                     : (i == vals.length - 1
-                                          ? p.accent
-                                          : p.accent.withValues(alpha: .55)),
+                                        ? p.accent
+                                        : p.accent.withValues(alpha: .55)),
                                 borderRadius: BorderRadius.circular(5),
                               ),
                             ),
@@ -7271,7 +7266,8 @@ class _CounterDetailState extends State<CounterDetailScreen> {
   @override
   Widget build(BuildContext c) {
     final p = ThemeScope.of(c).pal;
-    final money = counter.moneyEnabled && counter.mult != 0;
+    final money =
+        counter.moneyEnabled && (counter.usesManualMoney || counter.mult != 0);
 
     return Page(
       max: Tk.maxSingle,
@@ -7328,7 +7324,7 @@ class _CounterDetailState extends State<CounterDetailScreen> {
                       const SizedBox(height: 2),
                       Text(
                         '${L.t('step')} ${fmt(counter.step)}'
-                        '${counter.moneyEnabled ? '  ·  ${counter.symbol}${fmt(counter.moneyValue ?? 0)}' : ''}'
+                        '${counter.moneyEnabled ? '  ·  +${counter.symbol}${fmt(counter.usesManualMoney ? (counter.moneyStep ?? 0) : counter.step * counter.mult)}' : ''}'
                         '${mult > 1 ? '  ×$mult' : ''}',
                         style: cap(p, c: p.text2),
                       ),
@@ -7662,14 +7658,12 @@ class _PopFx extends StatefulWidget {
 }
 
 class _PopFxState extends State<_PopFx> with SingleTickerProviderStateMixin {
-  late final AnimationController c =
-      AnimationController(
-          vsync: this,
-          duration: const Duration(milliseconds: 760),
-        )
-        ..forward().whenComplete(() {
-          if (mounted) setState(widget.done);
-        });
+  late final AnimationController c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 760),
+  )..forward().whenComplete(() {
+      if (mounted) setState(widget.done);
+    });
 
   @override
   void dispose() {
@@ -7860,22 +7854,22 @@ class _CounterEditorState extends State<CounterEditorScreen> {
   bool get valid => name.text.trim().isNotEmpty;
 
   Counter preview() => Counter(
-    id: 'preview',
-    name: name.text.trim().isEmpty ? L.t('name') : name.text.trim(),
-    group: folder,
-    symbol: symbol.text.trim().isEmpty ? '€' : symbol.text.trim(),
-    value: vValue,
-    step: vStep,
-    mult: vMult,
-    moneyEnabled: moneyEnabled,
-    moneyValue: manualMoney ? (numOf(moneyValue.text) ?? 0) : null,
-    moneyStep: manualMoney ? (numOf(moneyStep.text) ?? 0) : null,
-    goalV: numOf(goalV.text),
-    goalM: numOf(goalM.text),
-    goalAction: goalAction,
-    icon: glyph,
-    log: widget.counter?.log,
-  );
+        id: 'preview',
+        name: name.text.trim().isEmpty ? L.t('name') : name.text.trim(),
+        group: folder,
+        symbol: symbol.text.trim().isEmpty ? '€' : symbol.text.trim(),
+        value: vValue,
+        step: vStep,
+        mult: vMult,
+        moneyEnabled: moneyEnabled,
+        moneyValue: manualMoney ? (numOf(moneyValue.text) ?? 0) : null,
+        moneyStep: manualMoney ? (numOf(moneyStep.text) ?? 0) : null,
+        goalV: numOf(goalV.text),
+        goalM: numOf(goalM.text),
+        goalAction: goalAction,
+        icon: glyph,
+        log: widget.counter?.log,
+      );
 
   void save() {
     if (!valid) return;
@@ -8643,10 +8637,9 @@ class FocusPane extends StatelessWidget {
                     children: [
                       for (var i = 0; i < 7; i++)
                         Text(
-                          weekdayNames()[DateTime.now()
-                                  .subtract(Duration(days: 6 - i))
-                                  .weekday -
-                              1][0],
+                          weekdayNames()[
+                              nowT().subtract(Duration(days: 6 - i)).weekday -
+                                  1][0],
                           style: over(p).copyWith(
                             fontSize: 8.5,
                             color: i == 6 ? p.accent : p.sub,
@@ -8771,8 +8764,8 @@ class CalendarPane extends StatefulWidget {
 }
 
 class _CalendarPaneState extends State<CalendarPane> {
-  late DateTime month = DateTime.now();
-  String day = dayKey(DateTime.now());
+  late DateTime month = nowT();
+  String day = dayKey(nowT());
 
   Future<void> openDay(String key) async {
     store.vib();
@@ -8788,7 +8781,7 @@ class _CalendarPaneState extends State<CalendarPane> {
   @override
   Widget build(BuildContext c) {
     final p = ThemeScope.of(c).pal;
-    final now = DateTime.now();
+    final now = nowT();
     final first = DateTime(month.year, month.month);
     final days = DateTime(month.year, month.month + 1, 0).day;
     final lead = first.weekday % 7; // sunday-first grid
@@ -8876,8 +8869,7 @@ class _CalendarPaneState extends State<CalendarPane> {
                               return const SizedBox(height: 54);
                             final key =
                                 '${month.year}-${two(month.month)}-${two(n)}';
-                            final isToday =
-                                now.year == month.year &&
+                            final isToday = now.year == month.year &&
                                 now.month == month.month &&
                                 now.day == n;
                             return _DayCell(
@@ -8984,8 +8976,8 @@ class _DayCell extends StatelessWidget {
           color: selected
               ? p.accent
               : heat > 0
-              ? p.accentSoft.withValues(alpha: .35 + heat * .55)
-              : p.surface2.withValues(alpha: .5),
+                  ? p.accentSoft.withValues(alpha: .35 + heat * .55)
+                  : p.surface2.withValues(alpha: .5),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: today && !selected ? p.accent : clear,
@@ -9023,9 +9015,8 @@ class _DayCell extends StatelessWidget {
                     height: 4,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: selected
-                          ? p.accentInk
-                          : p.gold.withValues(alpha: .9),
+                      color:
+                          selected ? p.accentInk : p.gold.withValues(alpha: .9),
                     ),
                   ),
                 ],
@@ -9311,9 +9302,8 @@ class _NotesState extends State<NotesScreen> {
                                 _dayLabel(n.ts),
                                 style: over(p).copyWith(
                                   fontSize: 9.5,
-                                  color: day == dayKey(DateTime.now())
-                                      ? p.accent
-                                      : p.sub,
+                                  color:
+                                      day == dayKey(nowT()) ? p.accent : p.sub,
                                 ),
                               ),
                             ),
@@ -9344,9 +9334,9 @@ class _NotesState extends State<NotesScreen> {
 
 String _dayLabel(int ts) {
   final d = DateTime.fromMillisecondsSinceEpoch(ts);
-  final today = dayKey(DateTime.now());
+  final today = dayKey(nowT());
   if (dayKey(d) == today) return L.t('today');
-  if (dayKey(d) == dayKey(DateTime.now().subtract(const Duration(days: 1)))) {
+  if (dayKey(d) == dayKey(nowT().subtract(const Duration(days: 1)))) {
     return L.t('yesterday');
   }
   return fullDate(d);
@@ -9503,9 +9493,8 @@ class _NoteSwipe extends StatelessWidget {
         border: Border.all(color: ink.withValues(alpha: .35)),
       ),
       child: Row(
-        mainAxisAlignment: end
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            end ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           if (end) ...[
             Text(
@@ -9602,7 +9591,7 @@ Future<void> noteMenu(BuildContext c, Note note) async {
 
 /// Day picker sheet used to move a note to another date.
 Future<DateTime?> pickDaySheet(BuildContext c) {
-  final now = DateTime.now();
+  final now = nowT();
   return sheet<DateTime>(
     c,
     Column(
@@ -9669,11 +9658,8 @@ class _NoteEditorState extends State<NoteEditorScreen> {
       text: parts.length <= 1 ? '' : parts.skip(1).join('\n'),
     );
     folder = note?.folder ?? store.prefs.notesFolder;
-    targetDate =
-        widget.initialDate ??
-        (note == null
-            ? DateTime.now()
-            : DateTime.fromMillisecondsSinceEpoch(note!.ts));
+    targetDate = widget.initialDate ??
+        (note == null ? nowT() : DateTime.fromMillisecondsSinceEpoch(note!.ts));
     color = note?.color ?? 0;
 
     titleCtrl.addListener(_changed);
@@ -9760,7 +9746,7 @@ class _NoteEditorState extends State<NoteEditorScreen> {
     if (mounted) {
       setState(() {
         dirty = false;
-        savedAt = DateTime.now().millisecondsSinceEpoch;
+        savedAt = nowT().millisecondsSinceEpoch;
       });
     }
     if (!silent) toasts.show(L.t('saved'), icon: 'check');
@@ -10163,9 +10149,8 @@ Future<void> showNoteProperties(
   DateTime date,
   Note? note,
 ) async {
-  final words = text.trim().isEmpty
-      ? 0
-      : text.trim().split(RegExp(r'\s+')).length;
+  final words =
+      text.trim().isEmpty ? 0 : text.trim().split(RegExp(r'\s+')).length;
 
   await sheet<void>(
     c,
@@ -10668,8 +10653,7 @@ class SettingsScreen extends StatelessWidget {
       L.t('dangerSub'),
       danger: true,
       confirmLabel: L.t('delete'),
-    ))
-      return;
+    )) return;
     store.wipeData();
     nav.jump(0);
     toasts.show(L.t('deleted'), icon: 'trash', bad: true);
@@ -11102,7 +11086,7 @@ class SettingsScreen extends StatelessWidget {
           continue;
         if (t.length < 2) continue;
         store.addNote(
-          dayKey(DateTime.now()),
+          dayKey(nowT()),
           t,
           0,
           folder: store.prefs.notesFolder,
@@ -11269,13 +11253,15 @@ class InfoScreen extends StatelessWidget {
                 const SetRow(
                   icon: 'clock',
                   label: 'Focus',
-                  sub: 'Timer that survives tab changes, wake lock, chime, auto note',
+                  sub:
+                      'Timer that survives tab changes, wake lock, chime, auto note',
                 ),
                 const _Hairline(),
                 const SetRow(
                   icon: 'note',
                   label: 'Notes',
-                  sub: 'Markdown with live preview, saved as .md in your own folder',
+                  sub:
+                      'Markdown with live preview, saved as .md in your own folder',
                 ),
                 const _Hairline(),
                 const SetRow(
@@ -11293,20 +11279,22 @@ class InfoScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(L.t('privacySub'), style: body(p).copyWith(height: 1.5)),
+                Text(L.t('privacyLead'), style: body(p).copyWith(height: 1.5)),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    IconX('lock', size: 15, color: p.accent),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        L.t('privacySub2'),
-                        style: cap(p).copyWith(fontSize: 11),
-                      ),
-                    ),
-                  ],
-                ),
+                for (final r in [
+                  ['lock', L.t('privacySub2')],
+                  ['shield', L.t('privacyNet')],
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 7),
+                    child: Row(children: [
+                      IconX(r[0], size: 15, color: p.accent),
+                      const SizedBox(width: 8),
+                      Expanded(
+                          child:
+                              Text(r[1], style: cap(p).copyWith(fontSize: 11))),
+                    ]),
+                  ),
               ],
             ),
           ),
@@ -11456,9 +11444,8 @@ class _RootState extends State<Root> {
       systemNavigationBarColor: p.surface,
       statusBarIconBrightness: p.dark ? Brightness.light : Brightness.dark,
       statusBarBrightness: p.dark ? Brightness.dark : Brightness.light,
-      systemNavigationBarIconBrightness: p.dark
-          ? Brightness.light
-          : Brightness.dark,
+      systemNavigationBarIconBrightness:
+          p.dark ? Brightness.light : Brightness.dark,
       systemNavigationBarDividerColor: p.line,
     );
     SystemChrome.setSystemUIOverlayStyle(style);
@@ -11470,8 +11457,7 @@ class _RootState extends State<Root> {
       animation: Listenable.merge([store, nav, focus]),
       builder: (_, __) {
         final brightness = MediaQuery.platformBrightnessOf(context);
-        final dark =
-            store.prefs.theme == 'dark' ||
+        final dark = store.prefs.theme == 'dark' ||
             (store.prefs.theme == 'system' && brightness == Brightness.dark);
         final p = Pal(dark, Accent.byKey(store.prefs.accent));
 
@@ -11626,18 +11612,19 @@ class OpenFocuslyApp extends StatelessWidget {
       supportedLocales: const [Locale('en'), Locale('it')],
       pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) =>
           PageRouteBuilder<T>(
-            settings: settings,
-            transitionDuration: Tk.base,
-            reverseTransitionDuration: Tk.fast,
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                builder(context),
-            transitionsBuilder: (
-              context,
-              animation,
-              secondaryAnimation,
-              child,
-            ) => child,
-          ),
+        settings: settings,
+        transitionDuration: Tk.base,
+        reverseTransitionDuration: Tk.fast,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            builder(context),
+        transitionsBuilder: (
+          context,
+          animation,
+          secondaryAnimation,
+          child,
+        ) =>
+            child,
+      ),
     );
   }
 }
