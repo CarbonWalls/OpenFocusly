@@ -275,55 +275,55 @@ class Accent {
   );
 
   static const Accent def = Accent(
-    'indigo',
-    'Indigo',
-    Color(0xFF3B5BDB),
-    Color(0xFF6E9BFF),
-    Color(0xFFE9EEFF),
-    Color(0xFF18243E),
+    'sky',
+    'Sky',
+    Color(0xFF2B6FDB),
+    Color(0xFF5B9EFF),
+    Color(0xFFE6F1FF),
+    Color(0xFF0F1A2E),
   );
 
   static const List<Accent> all = [
     def,
     Accent(
-      'teal',
-      'Teal',
-      Color(0xFF0B7285),
-      Color(0xFF4CD0E0),
-      Color(0xFFDCF3F6),
-      Color(0xFF102A31),
+      'cyan',
+      'Cyan',
+      Color(0xFF0891B2),
+      Color(0xFF38BDF8),
+      Color(0xFFDFF8FF),
+      Color(0xFF0A1820),
     ),
     Accent(
       'violet',
       'Violet',
-      Color(0xFF6741D8),
+      Color(0xFF7C3AED),
       Color(0xFFA78BFA),
-      Color(0xFFEFEBFF),
-      Color(0xFF211A3C),
+      Color(0xFFF0E9FF),
+      Color(0xFF1A0F33),
     ),
     Accent(
       'amber',
       'Amber',
-      Color(0xFFB26A00),
-      Color(0xFFF5B14C),
-      Color(0xFFFFF3DC),
-      Color(0xFF33260F),
+      Color(0xFFD97706),
+      Color(0xFFFBBF24),
+      Color(0xFFFFF7E6),
+      Color(0xFF2A1A08),
     ),
     Accent(
       'rose',
       'Rose',
-      Color(0xFFC2255C),
-      Color(0xFFF97FA6),
-      Color(0xFFFFEAF1),
-      Color(0xFF341A24),
+      Color(0xFFE11D48),
+      Color(0xFFFB7185),
+      Color(0xFFFFE9ED),
+      Color(0xFF2E0F16),
     ),
     Accent(
-      'moss',
-      'Moss',
-      Color(0xFF3B7A3B),
-      Color(0xFF8FD08A),
-      Color(0xFFE7F4E6),
-      Color(0xFF1A2A1B),
+      'emerald',
+      'Emerald',
+      Color(0xFF059669),
+      Color(0xFF6EE7B7),
+      Color(0xFFE6F9F2),
+      Color(0xFF0A1F18),
     ),
   ];
 
@@ -336,26 +336,26 @@ class Pal {
   final Accent seed;
   const Pal(this.dark, [this.seed = Accent.def]);
 
-  Color get bg => dark ? const Color(0xFF0C0E12) : const Color(0xFFF2F4F8);
-  Color get surface => dark ? const Color(0xFF151920) : const Color(0xFFFFFFFF);
+  Color get bg => dark ? const Color(0xFF05070C) : const Color(0xFFF8FAFB);
+  Color get surface => dark ? const Color(0xFF0F131C) : const Color(0xFFFFFFFF);
   Color get surface2 =>
-      dark ? const Color(0xFF1C222B) : const Color(0xFFECF0F5);
+      dark ? const Color(0xFF161D2B) : const Color(0xFFF2F4F7);
   Color get surface3 =>
-      dark ? const Color(0xFF242C37) : const Color(0xFFE2E8F0);
-  Color get line => dark ? const Color(0xFF272F3A) : const Color(0xFFE1E6ED);
+      dark ? const Color(0xFF1E2636) : const Color(0xFFE8ECEF);
+  Color get line => dark ? const Color(0xFF252E3D) : const Color(0xFFE3E7EB);
   Color get lineStrong =>
-      dark ? const Color(0xFF38424F) : const Color(0xFFCBD3DE);
-  Color get text => dark ? const Color(0xFFF3F5F9) : const Color(0xFF12161D);
-  Color get text2 => dark ? const Color(0xFFB3BCC9) : const Color(0xFF525E6E);
-  Color get sub => dark ? const Color(0xFF7B8697) : const Color(0xFF8590A0);
+      dark ? const Color(0xFF3A4555) : const Color(0xFFCED4DB);
+  Color get text => dark ? const Color(0xFFF5F7FA) : const Color(0xFF0D1116);
+  Color get text2 => dark ? const Color(0xFFB8C1CE) : const Color(0xFF4A5565);
+  Color get sub => dark ? const Color(0xFF7E8899) : const Color(0xFF6B7785);
   Color get accent => dark ? seed.dark : seed.light;
   Color get accentSoft => dark ? seed.tintDark : seed.tintLight;
   Color get accentInk =>
       dark ? const Color(0xFF0C0E12) : const Color(0xFFFFFFFF);
-  Color get good => dark ? const Color(0xFF5BD48A) : const Color(0xFF14804A);
-  Color get warn => dark ? const Color(0xFFF5B14C) : const Color(0xFFA8660A);
-  Color get bad => dark ? const Color(0xFFFF6B70) : const Color(0xFFD63B40);
-  Color get gold => dark ? const Color(0xFFF7C95B) : const Color(0xFFB77A16);
+  Color get good => dark ? const Color(0xFF6EE7B7) : const Color(0xFF059669);
+  Color get warn => dark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
+  Color get bad => dark ? const Color(0xFFFB7185) : const Color(0xFFE11D48);
+  Color get gold => dark ? const Color(0xFFFCD34D) : const Color(0xFFCA8A04);
 
   /// Soft gradient used by hero surfaces (home header, focus, detail).
   List<Color> get hero => dark ? [surface2, surface] : [accentSoft, surface];
@@ -365,25 +365,25 @@ class Pal {
   Pal get pal => this;
 
   Pal withAccent(Accent a) => Pal(dark, a);
-  Color get bgTop => dark ? const Color(0xFF12151A) : const Color(0xFFFAFBFD);
+  Color get bgTop => dark ? const Color(0xFF0A0D12) : const Color(0xFFFCFDFE);
 
   /// Note accent colours stay legible on both surfaces.
   Color noteInk(int i) {
     const light = [
-      Color(0xFF9AA3AF),
-      Color(0xFFB08900),
-      Color(0xFF2F6FCC),
-      Color(0xFF5B52D6),
-      Color(0xFFB9398A),
-      Color(0xFF14804A),
+      Color(0xFF64748B),
+      Color(0xFFD97706),
+      Color(0xFF2563EB),
+      Color(0xFF7C3AED),
+      Color(0xFFDB2777),
+      Color(0xFF059669),
     ];
     const darker = [
-      Color(0xFF7A8494),
-      Color(0xFFF5B14C),
-      Color(0xFF6E9BFF),
+      Color(0xFF94A3B8),
+      Color(0xFFFBBF24),
+      Color(0xFF60A5FA),
       Color(0xFFA78BFA),
-      Color(0xFFF97FA6),
-      Color(0xFF5BD48A),
+      Color(0xFFF472B6),
+      Color(0xFF6EE7B7),
     ];
     final c = dark ? darker : light;
     return c[i.clamp(0, c.length - 1)];
@@ -524,12 +524,12 @@ class MarkdownAutoCloseFormatter extends TextInputFormatter {
 }
 
 const noteColors = <Color>[
-  Color(0xFFF0F2F4),
-  Color(0xFFFFF0B5),
-  Color(0xFFDDEAFE),
-  Color(0xFFE4E8FF),
-  Color(0xFFF6DBEE),
-  Color(0xFFDDF4E6),
+  Color(0xFFF1F5F9),
+  Color(0xFFFEF3C7),
+  Color(0xFFDBEAFE),
+  Color(0xFFEDE9FE),
+  Color(0xFFFCE7F3),
+  Color(0xFFD1FAE5),
 ];
 
 Color noteColor(int index) => noteColors[index.clamp(0, noteColors.length - 1)];
@@ -8596,7 +8596,7 @@ class FocusPane extends StatelessWidget {
                         Ring(
                           value: focus.ratio,
                           size: 216,
-                          stroke: 11,
+                          stroke: 10,
                           tick: true,
                           color: live ? p.accent : p.lineStrong,
                         ),
